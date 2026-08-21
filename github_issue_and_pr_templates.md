@@ -2,16 +2,17 @@
 
 ## Feature: Interactive Event Budget ROI & Break-Even Calculator
 - **Issue Number**: [#3941](https://github.com/krushit1307/CampusConnect/issues/3941)
+- **Pull Request**: [#3967](https://github.com/krushit1307/CampusConnect/pull/3967)
 - **Feature Title**: `feat(analytics): build interactive event budget roi calculator`
 - **Domain**: Financial Analytics & Event Solvency
-- **Status**: Implemented & Ready for PR
+- **Status**: PR Submitted & Live
 - **Branch**: `feature/event-budget-roi-3941`
 - **Components & Services**:
-  - `src/components/events/InteractiveEventRoiCalculator.tsx`
-  - `src/services/eventRoiCalculatorService.ts`
-  - `src/routes/events.$id.budget-roi.tsx`
-  - `src/types/eventRoiCalculator.ts`
-  - `supabase/migrations/20261231000024_event_budget_roi.sql`
+  - `src/components/events/InteractiveEventRoiCalculator.tsx` (571 lines)
+  - `src/services/eventRoiCalculatorService.ts` (306 lines)
+  - `src/routes/events.$id.budget-roi.tsx` (105 lines)
+  - `src/types/eventRoiCalculator.ts` (83 lines)
+  - `supabase/migrations/20261231000024_event_budget_roi.sql` (121 lines)
 - **Summary**:
   Interactive financial feasibility and break-even simulator empowering club treasurers to stress-test ticket prices, attendance rates, fixed/variable costs, 2D sensitivity matrix heatmaps, and exportable financial summaries.
 
