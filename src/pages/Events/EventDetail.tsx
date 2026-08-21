@@ -12,6 +12,7 @@ import { EventDualClockTime } from "@/components/EventDualClockTime";
 import { useEventDualClock } from "@/hooks/useEventDualClock";
 import type { TimezoneAwareEvent } from "@/lib/venueTimezone";
 import { User } from "@supabase/supabase-js";
+import { SponsorBountiesSection } from "@/components/events/SponsorBountiesSection";
 
 interface EventDetailRecord extends TimezoneAwareEvent {
   id: string;
@@ -104,11 +105,7 @@ export default function EventDetail() {
         <div className="flex flex-wrap gap-x-8 gap-y-4 font-mono text-sm text-gray-700">
           {/* ── NEW: dual-clock time display (Issue #3680) ── */}
           <div className="min-w-[260px]">
-            <EventDualClockTime
-              data={dualClock}
-              venueLabel={venueLabel}
-              variant="full"
-            />
+            <EventDualClockTime data={dualClock} venueLabel={venueLabel} variant="full" />
           </div>
 
           {event.location && (
@@ -119,15 +116,15 @@ export default function EventDetail() {
           )}
         </div>
 
-        {event.description && (
-          <p className="whitespace-pre-wrap leading-7">{event.description}</p>
-        )}
+        {event.description && <p className="whitespace-pre-wrap leading-7">{event.description}</p>}
 
         {user && event.id && (
           <div className="pt-6">
             <VolunteerShifts eventId={event.id} userId={user.id} />
           </div>
         )}
+
+        {event.id && <SponsorBountiesSection eventId={event.id} />}
       </div>
 
       <EventFeedbackSurvey eventId={event.id} />
