@@ -45,6 +45,7 @@ import { createClubProfileQueryOptions } from "@/lib/clubProfileQuery";
 import { getClubThemeVars } from "@/lib/clubTheming";
 import { ClubHeader } from "@/components/Clubs/ClubHeader";
 import { ClubJobsSection } from "@/components/Clubs/ClubJobsSection";
+import { WidgetRenderer } from "@/components/widgets/WidgetRenderer";
 import { FlipCard } from "@/components/ui/FlipCard";
 import { useSearchParams } from "react-router-dom";
 
@@ -718,6 +719,10 @@ export default function ClubProfile() {
                         {club.description || ""}
                       </ReactMarkdown>
                     </div>
+
+                    {club.widgets_config && (
+                      <WidgetRenderer widgets={club.widgets_config} className="mt-8" />
+                    )}
 
                     {club.promo_video_url && (
                       <div className="mt-8 max-w-2xl">

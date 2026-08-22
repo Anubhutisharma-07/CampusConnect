@@ -16,6 +16,7 @@ import {
   Trash2,
   RefreshCw,
   BarChart3,
+  LayoutGrid,
 } from "lucide-react";
 import { PromoVideoUploader } from "@/components/PromoVideoUploader";
 import { ClubManageSkeleton } from "@/components/DashboardWidgetSkeleton";
@@ -29,6 +30,7 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import ClubAnalyticsDashboard from "@/components/clubs/ClubAnalyticsDashboard";
 import PermissionsGrid from "@/components/Clubs/PermissionsGrid";
 import ClubRenewalWizard from "@/components/ClubRenewalWizard"; // <-- NEW IMPORT FOR OUR WIZARD
+import { WidgetConfigEditor } from "@/components/widgets/WidgetConfigEditor";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -63,7 +65,14 @@ export default function ClubManageRoute() {
   const [user, setUser] = useState<User | null>(null);
 
   const [activeTab, setActiveTab] = useState<
-    "settings" | "members" | "permissions" | "events" | "constitution" | "trash" | "analytics"
+    | "settings"
+    | "members"
+    | "permissions"
+    | "events"
+    | "constitution"
+    | "trash"
+    | "analytics"
+    | "widgets"
   >("settings");
 
   // Mock constitution versions for demo
@@ -111,7 +120,7 @@ export default function ClubManageRoute() {
         .from("clubs")
         .select(
           `
-          id, name, slug, status, description, banner_url, logo_url, visibility, github_repo_url, social_links, social_links_order, promo_video_url, version,
+          id, name, slug, status, description, banner_url, logo_url, visibility, github_repo_url, social_links, social_links_order, promo_video_url, version, widgets_config,
           club_members (id, role, status, user_id, joined_at, can_edit_events, can_manage_finance, can_remove_members, can_post_news, can_manage_permissions, profiles (full_name, avatar_url, handle)),
           events (id, title, event_date, max_attendees, event_rsvps(id))
         `, // <-- Added status to query above
@@ -537,6 +546,16 @@ export default function ClubManageRoute() {
               >
                 <BarChart3 size={18} /> Analytics
               </button>
+              <button
+                onClick={() => setActiveTab("widgets")}
+                className={`neu-border flex items-center gap-3 p-4 font-mono text-sm font-bold uppercase transition-all ${
+                  activeTab === "widgets"
+                    ? "bg-black text-white hover:-translate-y-1"
+                    : "bg-white text-black hover:bg-gray-50"
+                }`}
+              >
+                <LayoutGrid size={18} /> Widgets
+              </button>
             </nav>
           </aside>
 
@@ -876,6 +895,22 @@ export default function ClubManageRoute() {
               </div>
             )}
             {activeTab === "analytics" && <ClubAnalyticsDashboard clubId={club.id} />}
+            {activeTab === "widgets" && (
+              <div className="neu-border bg-white p-6 space-y-6">
+                <h2 className="font-display text-2xl font-bold border-b-2 border-black pb-2">
+                  Homepage Widgets
+                </h2>
+                <p className="font-mono text-sm text-gray-600">
+                  Add interactive widgets to your club's public page — live weather, event
+                  countdowns, Spotify playlists and more. Drag to reorder; changes save
+                  automatically.
+                </p>
+                <WidgetConfigEditor
+                  clubId={club.id}
+                  initialWidgets={(club as { widgets_config?: unknown }).widgets_config}
+                />
+              </div>
+            )}
           </main>
         </div>
       </div>

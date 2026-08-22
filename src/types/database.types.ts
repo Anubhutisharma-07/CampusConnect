@@ -32,6 +32,7 @@ export type Database = {
           promo_video_url: string | null;
           primary_color: string | null;
           secondary_color: string | null;
+          widgets_config: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -63,6 +64,7 @@ export type Database = {
           promo_video_url?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
+          widgets_config?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -94,6 +96,7 @@ export type Database = {
           promo_video_url?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
+          widgets_config?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
