@@ -756,6 +756,26 @@ export default function SettingsPage() {
             </div>
           </div>
           {/* ------------------------------- */}
+          <Panel title="Integrations">
+            <div className="mb-6 border-2 border-black bg-lime/10 p-4 font-mono text-sm">
+              <p className="font-bold text-black uppercase mb-2">Spotify</p>
+              <p className="text-xs text-gray-700 mb-4">
+                Connect your Spotify account to easily export song requests from your events to playlists.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  // In a real implementation, this would trigger an OAuth flow with Supabase or a custom endpoint
+                  // supabase.auth.signInWithOAuth({ provider: 'spotify', options: { scopes: 'playlist-modify-public playlist-modify-private' } })
+                  toast.info('Spotify OAuth configuration required.');
+                }}
+                className="neu-border flex items-center gap-2 bg-[#1DB954] text-white px-4 py-2 font-bold uppercase transition-all hover:scale-105 active:scale-95"
+              >
+                Link Spotify Profile
+              </button>
+            </div>
+          </Panel>
+          {/* ------------------------------- */}
           <Panel title="Profile">
             <AvatarUpload name={currentFullName || "User"} avatarTheme={currentAvatarTheme} />
 
@@ -1019,18 +1039,34 @@ export default function SettingsPage() {
                 <FormField
                   control={form.control}
                   name="bio"
-                  render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormLabel className="eyebrow font-bold text-black">Bio</FormLabel>
-                      <FormControl>
-                        <input
-                          {...field}
-                          className="w-full border-0 border-b-2 border-black bg-transparent px-1 py-2 font-mono text-sm outline-none focus:bg-lime/40"
-                        />
-                      </FormControl>
-                      <FormMessage className="font-mono text-xs text-destructive" />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const bioValue = field.value || "";
+                    const isLimitReached = bioValue.length >= 150;
+
+                    return (
+                      <FormItem className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="eyebrow font-bold text-black">Bio</FormLabel>
+                          <span
+                            aria-label="Character limit"
+                            className={`font-mono text-xs font-bold transition-colors ${
+                              isLimitReached ? "text-red-600" : "text-muted-foreground"
+                            }`}
+                          >
+                            {bioValue.length}/150 characters
+                          </span>
+                        </div>
+                        <FormControl>
+                          <input
+                            {...field}
+                            maxLength={150}
+                            className="w-full border-0 border-b-2 border-black bg-transparent px-1 py-2 font-mono text-sm outline-none focus:bg-lime/40"
+                          />
+                        </FormControl>
+                        <FormMessage className="font-mono text-xs text-destructive" />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 {/* ── Skills Tags Editor ── */}
