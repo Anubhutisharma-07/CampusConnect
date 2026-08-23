@@ -6,6 +6,7 @@ import { verifyAuth } from "../shared/auth-middleware.ts";
 import { rsvpIpLimiter, rsvpUserLimiter } from "../_shared/rateLimiter.ts";
 import { parseJsonBody } from "../_shared/validation.ts";
 import { verifyCsrf } from "../_shared/csrf.ts";
+import { signTicket } from "../_shared/ticket-crypto.ts";
 
 const toggleRsvpSchema = z
   .object({
@@ -13,6 +14,7 @@ const toggleRsvpSchema = z
     hasRsvpd: z.boolean().optional(),
     captchaToken: z.string().optional(),
     accommodationsRequested: z.string().max(1000).optional().nullable(),
+    noMediaConsent: z.boolean().optional().nullable(),
     referredBy: z.string().uuid().optional().nullable(),
   })
   .strict();
@@ -162,7 +164,8 @@ serve(async (req: Request) => {
 
     const parsed = await parseJsonBody(toggleRsvpSchema, req);
     if (!parsed.ok) return parsed.response;
-    const { eventId, hasRsvpd, captchaToken, accommodationsRequested, referredBy } = parsed.data;
+    const { eventId, hasRsvpd, captchaToken, accommodationsRequested, noMediaConsent, referredBy } =
+      parsed.data;
 
     const siteKey = Deno.env.get("TURNSTILE_SITE_KEY") || Deno.env.get("HCAPTCHA_SITE_KEY");
     const secretKey = Deno.env.get("TURNSTILE_SECRET_KEY") || Deno.env.get("HCAPTCHA_SECRET_KEY");
@@ -274,6 +277,87 @@ serve(async (req: Request) => {
 
       return respond({ success: true, status: "cancelled" }, 200);
     } else {
+      // 1.5 Pre-flight Prerequisite Verification
+      const { data: eventData, error: eventErr } = await supabase
+        .from("events")
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+ main
+
+ feature/vendor-contract-nudges
+ main
+        .select("prerequisite_event_id, title")
+
+
+ main
+        .select("prerequisite_event_id, title, has_photography")
+        .eq("id", eventId)
+        .single();
+
+      if (eventErr) throw eventErr;
+
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+ main
+
+ feature/vendor-contract-nudges
+ main
+
+
+ main
+      if (eventData?.has_photography && noMediaConsent == null) {
+        return respond(
+          { error: "Media consent choice is required for this photography event." },
+          400,
+        );
+      }
+      if (eventData?.prerequisite_event_id) {
+        const { data: prereqRsvp } = await supabase
+          .from("event_rsvps")
+          .select("checked_in")
+          .match({ event_id: eventData.prerequisite_event_id, user_id: user.id })
+          .maybeSingle();
+
+        if (!prereqRsvp || !prereqRsvp.checked_in) {
+          return respond(
+            {
+              error: `You must attend the prerequisite event before registering for this event.`,
+ feature/waitlist-churn-predictor
+           },
+ feature/waitlist-churn-predictor
+
+            },
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+
+ main
+ feature/vendor-contract-nudges
+ main
+            403
+
+
+ main
+            403,
+          );
+        }
+      }
+
       // 2. highly concurrent checkout flow utilizing PG advisory locks and backoff retry mechanism
       let attempts = 0;
       const maxAttempts = 5;
@@ -293,6 +377,22 @@ serve(async (req: Request) => {
         }
 
         if (data && data.success && (data.status === "attending" || data.status === "waitlisted")) {
+          const { error: mediaConsentError } = await supabase
+            .from("event_rsvps")
+            .update({ no_media_consent: noMediaConsent === true })
+            .match({ event_id: eventId, user_id: user.id });
+
+          if (mediaConsentError) {
+            await supabase
+              .from("event_rsvps")
+              .delete()
+              .match({ event_id: eventId, user_id: user.id });
+            return respond(
+              { error: "Failed to securely save media consent. Please try again." },
+              500,
+            );
+          }
+
           if (accommodationsRequested) {
             const { error: updateErr } = await supabase
               .from("event_rsvps")
@@ -407,6 +507,45 @@ serve(async (req: Request) => {
               const msg = err instanceof Error ? err.message : "Unknown error";
               console.error("Accommodations email notification processing failure:", msg);
             }
+          }
+
+          // Decentralized Ticketing: Sign the ticket
+          try {
+            // 1. Get user's public key from profile
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("public_key")
+              .eq("id", user.id)
+              .single();
+
+            // 2. Get the new ticket (event_rsvps) to get the ticket_id
+            const { data: rsvpData } = await supabase
+              .from("event_rsvps")
+              .select("id, ticket_id, version")
+              .match({ event_id: eventId, user_id: user.id })
+              .single();
+
+            if (profile?.public_key && rsvpData?.ticket_id) {
+              // 3. Sign the ticket
+              const signature = await signTicket(
+                rsvpData.ticket_id,
+                eventId,
+                profile.public_key,
+                rsvpData.version || 1,
+              );
+
+              // 4. Update the ticket with public key and signature
+              await supabase
+                .from("event_rsvps")
+                .update({
+                  owner_public_key: profile.public_key,
+                  signature: signature,
+                })
+                .eq("id", rsvpData.id);
+            }
+          } catch (cryptoErr) {
+            console.error("Failed to cryptographically sign ticket:", cryptoErr);
+            // Non-fatal, ticket is still issued but may not work offline yet
           }
 
           return respond({ success: true, status: data.status, position: data.position }, 200);
