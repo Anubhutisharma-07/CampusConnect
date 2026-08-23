@@ -156,6 +156,7 @@ const VolunteerRecord = lazy(() => import("./routes/volunteer-record"));
 
 const EventsLayout = lazy(() => import("./pages/Events/EventsLayout"));
 const LazyEventsIndex = lazy(() => import("./pages/Events/EventsList"));
+const LazyTicketingDemo = lazy(() => import("./pages/Events/CampusEventTicketingPage"));
 const LazyEventDetails = lazy(() => import("./pages/Events/EventDetail"));
 const EmptyState = lazy(() => import("./pages/Events/EmptyState"));
 const TourManager = lazy(() => import("./routes/tours.manage"));
