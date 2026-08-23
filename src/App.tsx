@@ -163,7 +163,12 @@ const TourMode = lazy(() => import("./routes/tours.$tourId"));
 const BundleCheckoutRoute = lazy(() => import("./pages/BundleCheckoutPage"));
 const BundleDetailsRoute = lazy(() => import("./pages/BundleDetailsPage"));
 const EquipmentMarketplace = lazy(() => import("./routes/equipment"));
-const MentorshipDashboard = lazy(() => import("./routes/mentorship-dashboard"));
+<<<<<<< Updated upstream
+=======
+const Wrapped2026 = lazy(() => import("./routes/wrapped.2026"));
+const SkillSwapMarketplace = lazy(() => import("./routes/skill-swap"));
+const CampusWellnessHub = lazy(() => import("./pages/wellness/CampusWellnessHub"));
+>>>>>>> Stashed changes
 const ReferralDashboardRoute = lazy(() => import("./pages/ReferralDashboard"));
 const ReferralLeaderboardRoute = lazy(() => import("./pages/ReferralLeaderboard"));
 const AudioTourRoute = lazy(() => import("./routes/audio-tour"));
@@ -403,6 +408,55 @@ const router = createBrowserRouter(
 
             <Route path="/gallery" element={<GalleryPage />} />
           </Route>
+ feature/3022-club-hibernation-workflow
+          <Route path="/events/:eventId/dashboard" element={<EventDashboard />} />
+          <Route
+            path="/events/:eventId/kiosk"
+            element={
+              <Suspense fallback={<RemoteLoadingScreen />}>
+                <EventKiosk />
+              </Suspense>
+            }
+          />
+          <Route path="/events/:eventId/gantt" element={<EventGantt />} />
+          {/* Events Map View with clustering */}
+          <Route path="events/map" element={<EventsMapPage />} />
+          {/* Campus Heatmap - Live Activity */}
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/tours/manage" element={<TourManager />} />
+          <Route path="/tours/:tourId" element={<TourMode />} />{" "}
+          <Route path="challenge" element={<ChallengeArena />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/lost-found" element={<LostFound />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/data" element={<SettingsData />} />
+          <Route path="/recap" element={<Recap />} />
+          <Route path="/volunteer-record" element={<VolunteerRecord />} />
+          <Route path="/network" element={<NetworkPage />} />
+          <Route path="/admin/clubs/pending" element={<PendingClubsAdmin />} />
+          <Route path="/admin/clubs/revival-requests" element={<AdminRevivalRequestsPage />} />
+          <Route path="/admin/analytics" element={<AnalyticsAdmin />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/messages" element={<MessagesRoute />} />
+          <Route path="/admin/reports" element={<AdminReportsPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/restore" element={<AdminRestorePage />} />
+          <Route path="/admin/dlq" element={<AdminDlqPage />} />
+          <Route path="/admin/leadership-approvals" element={<AdminLeadershipApprovals />} />
+          <Route path="/equipment-rentals" element={<EquipmentMarketplace />} />
+<<<<<<< Updated upstream
+=======
+          <Route path="/wrapped/2026" element={<Wrapped2026 />} />
+          <Route path="/skill-swap" element={<SkillSwapMarketplace />} />
+            <Route path="/wellness" element={<CampusWellnessHub />} />
+>>>>>>> Stashed changes
+          <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
+          {/* Catch-all route for 404 errors */}
+          <Route path="*" element={<NotFound />} />
+
         </Route>
       </Route>
     </>,
