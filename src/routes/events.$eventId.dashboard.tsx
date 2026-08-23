@@ -500,6 +500,13 @@ function EventLiveSupportPanel({ eventId }: { eventId: string }) {
               <h2 className="font-display text-xl font-black uppercase">Post-Event Feedback</h2>
             </div>
 
+            <div className="mt-4">
+              <EventFeedbackLlmSummaryCard
+                eventId={eventId!}
+                responseCount={feedbackSummary?.response_count ?? 0}
+              />
+            </div>
+
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="border-2 border-black bg-white p-4">
                 <p className="font-mono text-xs font-bold uppercase">Average Rating</p>
