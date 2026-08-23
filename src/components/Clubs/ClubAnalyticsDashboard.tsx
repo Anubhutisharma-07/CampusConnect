@@ -530,6 +530,8 @@ export function ClubAnalyticsDashboard({ clubId }: ClubAnalyticsDashboardProps) 
           </div>
         </>
       )}
+      {/* ── NEW (Issue #3682): Roster Pruning Report ── */}
+      <ClubPruneReportPanel clubId={clubId} />
     </div>
   );
 }
