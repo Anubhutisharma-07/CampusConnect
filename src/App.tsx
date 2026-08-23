@@ -117,6 +117,7 @@ const DashboardCalendar = lazy(() => import("./routes/dashboard.calendar"));
 const GlobalCalendar = lazy(() => import("./routes/calendar"));
 const Feed = lazy(() => import("./routes/feed"));
 const EventsMapPage = lazy(() => import("./routes/events.map"));
+const InteractiveCampusMap = lazy(() => import("./routes/events.interactive-map"));
 const MapPage = lazy(() => import("./routes/map"));
 const ForgotPassword = lazy(() => import("./routes/forgot-password"));
 const ResetPassword = lazy(() => import("./routes/reset-password"));
@@ -139,6 +140,7 @@ const NotFound = lazy(() => import("./routes/NotFound"));
 const ChallengeArena = lazy(() => import("./routes/challenge"));
 const EventDashboard = lazy(() => import("./routes/events.$eventId.dashboard"));
 const EventGantt = lazy(() => import("./routes/events.$eventId.gantt"));
+const EventFloorplan = lazy(() => import("./routes/events.$eventId.floorplan"));
 const LostFound = lazy(() => import("./routes/lost-found"));
 const Leaderboard = lazy(() =>
   import("./components/Leaderboard").then((m) => ({ default: m.Leaderboard })),
