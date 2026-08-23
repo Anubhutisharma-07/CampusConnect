@@ -685,6 +685,7 @@ export type Database = {
           notification_preferences: Json | null;
           is_banned: boolean;
           strike_count: number;
+          show_on_leaderboard: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -708,6 +709,7 @@ export type Database = {
           notification_preferences?: Json | null;
           is_banned?: boolean;
           strike_count?: number;
+          show_on_leaderboard?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -731,6 +733,7 @@ export type Database = {
           notification_preferences?: Json | null;
           is_banned?: boolean;
           strike_count?: number;
+          show_on_leaderboard?: boolean;
           created_at?: string;
           updated_at?: string;
         };
