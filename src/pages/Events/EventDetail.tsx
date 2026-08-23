@@ -28,6 +28,7 @@ import { HelpQueueMentorDashboard } from "@/components/events/HelpQueueMentorDas
 import { HelpQueueAttendeeWidget } from "@/components/events/HelpQueueAttendeeWidget";
 import { DietaryForecastPanel } from "@/components/events/DietaryForecastPanel";
 import { User } from "@supabase/supabase-js";
+import { ScavengerHuntWidget } from "@/components/events/ScavengerHuntWidget";
 import { SongRequestSection } from "@/components/events/SongRequestSection";
 import { RealTimeEventParkingMap } from "@/components/events/RealTimeEventParkingMap";
 import { SponsorBountiesSection } from "@/components/events/SponsorBountiesSection";
@@ -153,14 +154,6 @@ export default function EventDetail() {
             <EventDualClockTime data={dualClock} venueLabel={venueLabel} variant="full" />
           </div>
 
-          {event.location && (
-            <span className="flex items-center gap-2">
-              <MapPin size={18} aria-hidden="true" />
-              {event.location}
-            </span>
-          )}
-        </div>
-
         {event.description && <p className="whitespace-pre-wrap leading-7">{event.description}</p>}
 
         {user && event.id && (
@@ -197,14 +190,10 @@ export default function EventDetail() {
           </div>
         )}
 
-        {/* ── NEW (Issue #4052): Real-Time Parking Availability ── */}
-        {event.id && (
+        {/* ── NEW (Issue #4043): Scavenger Hunt ────────────────── */}
+        {user && event.id && (
           <div className="pt-6">
-            <RealTimeEventParkingMap
-              eventId={event.id}
-              eventName={event.title}
-              venueName={event.venues?.name || event.location || "Venue"}
-            />
+            <ScavengerHuntWidget eventId={event.id} />
           </div>
         )}
       </div>
