@@ -106,6 +106,31 @@ export default function SettingsPage() {
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const { fontSize, increment, decrement, reset } = useFontSize();
 
+  // --- Dietary Restrictions state ---
+  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
+  const [dietaryInput, setDietaryInput] = useState("");
+  const dietaryInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAddDietary = () => {
+    const trimmed = dietaryInput.trim();
+    if (trimmed && !dietaryRestrictions.includes(trimmed)) {
+      setDietaryRestrictions((prev) => [...prev, trimmed]);
+    }
+    setDietaryInput("");
+    dietaryInputRef.current?.focus();
+  };
+
+  const handleDietaryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddDietary();
+    }
+  };
+
+  const handleRemoveDietary = (item: string) => {
+    setDietaryRestrictions((prev) => prev.filter((d) => d !== item));
+  };
+
   // --- Skills tags state ---
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
@@ -485,6 +510,12 @@ export default function SettingsPage() {
         preferredCurrency: profile?.preferred_currency || "USD",
         showOnLeaderboard: profile?.show_on_leaderboard !== false,
       });
+
+      // Hydrate dietary restrictions from profile (text[])
+      if (Array.isArray(profile?.dietary_restrictions)) {
+        setDietaryRestrictions(profile.dietary_restrictions as string[]);
+      }
+
       // Hydrate skills from profile (text[])
       if (Array.isArray(profile?.skills)) {
         setSkills(profile.skills as string[]);
@@ -600,6 +631,8 @@ export default function SettingsPage() {
       // Update profiles table (including skills text[])
       const dedupedSkills = [...new Set(skills.map((s) => s.trim()).filter(Boolean))];
 
+      const dedupedDietary = [...new Set(dietaryRestrictions.map((s) => s.trim()).filter(Boolean))];
+
       // 1. Build dirty payload and strictly validate against allowlist
       const rawPayload = {
         avatar_theme: values.avatarTheme || null,
@@ -610,6 +643,7 @@ export default function SettingsPage() {
         linkedin_url: values.linkedinUrl || null,
         phone_number: values.phoneNumber || null,
         skills: dedupedSkills,
+        dietary_restrictions: dedupedDietary,
         expected_graduation_date: values.expectedGraduationDate || null,
         preferred_currency: values.preferredCurrency,
         show_on_leaderboard: values.showOnLeaderboard,
