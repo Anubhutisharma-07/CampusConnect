@@ -1,5 +1,7 @@
 import { BugReportModal } from "@/components/Modals/BugReportModal";
-import { ExternalLink, Github, MessageCircle } from "lucide-react";
+import ExternalLink from "lucide-react/dist/esm/icons/external-link";
+import Github from "lucide-react/dist/esm/icons/github";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -35,6 +37,7 @@ const SOCIAL_LINKS = [
 export function Footer() {
   const [bugReportOpen, setBugReportOpen] = useState(false);
   const { t } = useTranslation();
+  const currentYear = new Date().getFullYear();
 
   return (
     <footer className="border-t-4 border-black bg-lime shadow-[0_-4px_0_0_var(--color-ink)]">
@@ -97,7 +100,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-8 border-t-2 border-black pt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-black">
-            {t("footer.copyright", { year: new Date().getFullYear() })}
+            {t("footer.copyright", { year: currentYear })}
           </p>
 
           <div className="flex items-center gap-4">

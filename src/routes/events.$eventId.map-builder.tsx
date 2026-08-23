@@ -3,20 +3,23 @@ import { useParams, useNavigate } from "react-router-dom";
 import { DndContext, useDraggable, useDroppable, DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Save,
-  RotateCw,
-  Trash2,
-  Maximize2,
-  Layout,
-  HelpCircle,
-  Sparkles,
-} from "lucide-react";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
+import Save from "lucide-react/dist/esm/icons/save";
+import RotateCw from "lucide-react/dist/esm/icons/rotate-cw";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import Maximize2 from "lucide-react/dist/esm/icons/maximize-2";
+import Layout from "lucide-react/dist/esm/icons/layout";
+import HelpCircle from "lucide-react/dist/esm/icons/help-circle";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 import { SiteShell } from "@/components/site/SiteShell";
 import { createClient } from "@/lib/supabase/client";
 import { useMapBuilderStore, MapBuilderElement } from "@/stores/mapBuilderStore";
+import {
+  ACCESSIBILITY_NODE_LABELS,
+  isAccessibilityNode,
+  type MapNodeType,
+} from "@/lib/accessibilityMap";
 
 // Snap coordinates helper
 const snapToGrid = (val: number, gridSize: number): number => {
@@ -40,7 +43,7 @@ function PaletteItem({
   defaultWidth,
   defaultHeight,
 }: {
-  type: "table" | "stage" | "boundary" | "booth";
+  type: MapNodeType;
   label: string;
   defaultWidth: number;
   defaultHeight: number;
@@ -99,18 +102,28 @@ function CanvasElement({ element }: { element: MapBuilderElement }) {
     zIndex: isSelected ? 1000 : element.zIndex || 10,
   };
 
-  const colors = {
+  const colors: Record<MapNodeType, string> = {
     table: "bg-amber-100",
     stage: "bg-indigo-100",
     boundary: "bg-red-50",
     booth: "bg-emerald-100",
+    sponsor: "bg-emerald-200",
+    entrance: "bg-blue-100",
+    elevator: "bg-blue-200",
+    ramp: "bg-blue-300",
+    restroom: "bg-cyan-200",
   };
 
-  const borders = {
+  const borders: Record<MapNodeType, string> = {
     table: "border-amber-400",
     stage: "border-indigo-400",
     boundary: "border-red-400 border-dashed",
     booth: "border-emerald-400",
+    sponsor: "border-emerald-600",
+    entrance: "border-blue-700",
+    elevator: "border-blue-800",
+    ramp: "border-blue-900",
+    restroom: "border-cyan-800",
   };
 
   // Custom mouse resize handler
@@ -147,10 +160,12 @@ function CanvasElement({ element }: { element: MapBuilderElement }) {
     <div
       ref={setNodeRef}
       style={style}
+      data-testid={`canvas-element-${element.id}`}
       onClick={(e) => {
         e.stopPropagation();
         selectElement(element.id);
       }}
+      aria-label={`${element.label}, ${ACCESSIBILITY_NODE_LABELS[element.type] || element.type}`}
       className={`relative select-none border-2 border-black flex flex-col items-center justify-center p-2 text-center transition-shadow shadow-[2px_2px_0_0_#000] ${
         colors[element.type]
       } ${isSelected ? "ring-2 ring-black" : ""} ${hasOverlap ? "border-dashed border-red-500 bg-red-100/40" : ""}`}
@@ -243,23 +258,58 @@ export default function CampusMapBuilder() {
   const [eventTitle, setEventTitle] = useState("");
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Load layout from database
+  // Load layout from database (relational tables: venue_maps and map_nodes)
   useEffect(() => {
     if (!eventId) return;
 
     const loadData = async () => {
       try {
-        const { data, error } = await supabase
+        // Fetch event title
+        const { data: eventData, error: eventError } = await supabase
           .from("events")
-          .select("title, map_layout")
+          .select("title")
           .eq("id", eventId)
           .single();
 
-        if (error) throw error;
+        if (eventError) throw eventError;
+        setEventTitle(eventData?.title || "Event Builder");
 
-        setEventTitle(data?.title || "Event Builder");
-        if (data?.map_layout && Array.isArray(data.map_layout)) {
-          setElements(data.map_layout as MapBuilderElement[]);
+        // Fetch venue map details
+        const { data: mapData, error: mapError } = await supabase
+          .from("venue_maps")
+          .select("id, background_image_url")
+          .eq("event_id", eventId)
+          .maybeSingle();
+
+        if (mapError) throw mapError;
+
+        if (mapData) {
+          // Fetch map nodes
+          const { data: nodesData, error: nodesError } = await supabase
+            .from("map_nodes")
+            .select(
+              "id, entity_name, type, x_coord, y_coord, width, height, rotation, accessibility_notes",
+            )
+            .eq("map_id", mapData.id);
+
+          if (nodesError) throw nodesError;
+
+          // Convert relative percentage coordinates back to absolute pixels for the editor's 800x600 grid
+          const loadedElements: MapBuilderElement[] = (nodesData || []).map((node) => ({
+            id: node.id,
+            type: node.type as MapNodeType,
+            label: node.entity_name || "",
+            x: Math.round((Number(node.x_coord) / 100) * 800),
+            y: Math.round((Number(node.y_coord) / 100) * 600),
+            width: Math.round((Number(node.width) / 100) * 800),
+            height: Math.round((Number(node.height) / 100) * 600),
+            rotation: node.rotation,
+            accessibilityNotes: node.accessibility_notes || "",
+          }));
+
+          setElements(loadedElements);
+        } else {
+          setElements([]);
         }
       } catch (err) {
         console.error("Failed to load map layout:", err);
@@ -347,7 +397,8 @@ export default function CampusMapBuilder() {
       const snappedX = snapToGrid(relativeX, gridSize);
       const snappedY = snapToGrid(relativeY, gridSize);
 
-      const type = active.data.current?.type;
+      const type = active.data.current?.type as MapNodeType | undefined;
+      if (!type) return;
       const width = active.data.current?.defaultWidth || 80;
       const height = active.data.current?.defaultHeight || 60;
 
@@ -363,7 +414,10 @@ export default function CampusMapBuilder() {
         width,
         height,
         rotation: 0,
-        label: `${type.toUpperCase()} #${elements.length + 1}`,
+        label:
+          type === "entrance"
+            ? "MAIN ENTRANCE"
+            : `${ACCESSIBILITY_NODE_LABELS[type as MapNodeType] || type.toUpperCase()} #${elements.length + 1}`,
       };
 
       addElement(newElement);
@@ -387,17 +441,75 @@ export default function CampusMapBuilder() {
     }
   };
 
-  // Save layout state back to the database
+  // Save layout state back to the database (relational tables: venue_maps and map_nodes)
   const saveLayoutToDatabase = async () => {
     if (!eventId) return;
 
-    try {
-      const { error } = await supabase
-        .from("events")
-        .update({ map_layout: elements })
-        .eq("id", eventId);
+    // Check for collisions (overlap) before saving
+    let hasCollision = false;
+    for (let i = 0; i < elements.length; i++) {
+      for (let j = i + 1; j < elements.length; j++) {
+        if (checkOverlap(elements[i], elements[j])) {
+          hasCollision = true;
+          break;
+        }
+      }
+      if (hasCollision) break;
+    }
 
-      if (error) throw error;
+    if (hasCollision) {
+      toast.error("Cannot save: Some elements are overlapping. Please resolve all collisions.");
+      return;
+    }
+
+    try {
+      let mapId: string;
+
+      // 1. Fetch or create a venue map record for this event
+      const { data: existingMap, error: findError } = await supabase
+        .from("venue_maps")
+        .select("id")
+        .eq("event_id", eventId)
+        .maybeSingle();
+
+      if (findError) throw findError;
+
+      if (existingMap) {
+        mapId = existingMap.id;
+      } else {
+        const { data: newMap, error: insertError } = await supabase
+          .from("venue_maps")
+          .insert({ event_id: eventId })
+          .select("id")
+          .single();
+
+        if (insertError) throw insertError;
+        mapId = newMap.id;
+      }
+
+      // 2. Clear old nodes for this venue map
+      const { error: deleteError } = await supabase.from("map_nodes").delete().eq("map_id", mapId);
+
+      if (deleteError) throw deleteError;
+
+      // 3. Bulk insert new nodes converted to relative percentage dimensions
+      if (elements.length > 0) {
+        const nodesToInsert = elements.map((el) => ({
+          map_id: mapId,
+          entity_name: el.label,
+          type: el.type,
+          x_coord: (el.x / 800) * 100,
+          y_coord: (el.y / 600) * 100,
+          width: (el.width / 800) * 100,
+          height: (el.height / 600) * 100,
+          rotation: el.rotation,
+          accessibility_notes: el.accessibilityNotes || null,
+        }));
+
+        const { error: insertNodesError } = await supabase.from("map_nodes").insert(nodesToInsert);
+
+        if (insertNodesError) throw insertNodesError;
+      }
 
       toast.success("Layout configuration saved successfully!");
     } catch (err: any) {
@@ -419,7 +531,10 @@ export default function CampusMapBuilder() {
     return (
       <SiteShell>
         <div className="flex h-[50vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-black border-t-transparent" />
+          <div
+            role="status"
+            className="h-8 w-8 animate-spin rounded-full border-4 border-black border-t-transparent"
+          />
         </div>
       </SiteShell>
     );
@@ -491,6 +606,39 @@ export default function CampusMapBuilder() {
                       defaultWidth={60}
                       defaultHeight={60}
                     />
+                    <div className="border-t-2 border-black pt-3 font-mono text-[10px] font-black uppercase text-blue-900">
+                      Accessibility layer
+                    </div>
+                    <PaletteItem
+                      type="sponsor"
+                      label="Sponsor Booth"
+                      defaultWidth={80}
+                      defaultHeight={60}
+                    />
+                    <PaletteItem
+                      type="entrance"
+                      label="Main Entrance"
+                      defaultWidth={50}
+                      defaultHeight={50}
+                    />
+                    <PaletteItem
+                      type="elevator"
+                      label="Elevator"
+                      defaultWidth={50}
+                      defaultHeight={50}
+                    />
+                    <PaletteItem
+                      type="ramp"
+                      label="Accessible Ramp"
+                      defaultWidth={80}
+                      defaultHeight={30}
+                    />
+                    <PaletteItem
+                      type="restroom"
+                      label="Accessible Restroom"
+                      defaultWidth={60}
+                      defaultHeight={60}
+                    />
                   </div>
                 </div>
 
@@ -535,6 +683,23 @@ export default function CampusMapBuilder() {
                         <span className="font-bold">Grid Position:</span> {selectedElement.x},{" "}
                         {selectedElement.y}
                       </div>
+                      {isAccessibilityNode(selectedElement.type) && (
+                        <label className="block">
+                          <span className="font-bold">Accessibility notes:</span>
+                          <textarea
+                            value={selectedElement.accessibilityNotes || ""}
+                            onChange={(e) =>
+                              updateElement(selectedElement.id, {
+                                accessibilityNotes: e.target.value,
+                              })
+                            }
+                            rows={3}
+                            maxLength={240}
+                            placeholder="e.g. Use the west entrance; automatic door is 10 feet south."
+                            className="mt-1 w-full border-2 border-black bg-white p-1 text-xs"
+                          />
+                        </label>
+                      )}
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={handleRotateSelected}

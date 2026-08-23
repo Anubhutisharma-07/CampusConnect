@@ -9,9 +9,16 @@ import { NavbarNotificationDropdown } from "./NavbarNotificationDropdown";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { createClient } from "@/lib/supabase/client";
 
-import { Menu, X, WifiOff, Bookmark } from "lucide-react";
+import Menu from "lucide-react/dist/esm/icons/menu";
+import X from "lucide-react/dist/esm/icons/x";
+import WifiOff from "lucide-react/dist/esm/icons/wifi-off";
+import Bookmark from "lucide-react/dist/esm/icons/bookmark";
+import Search from "lucide-react/dist/esm/icons/search";
 import { useAuthHydration } from "@/hooks/useAuthHydration";
+import { useProfileCompleteness } from "@/hooks/useProfileCompleteness";
+import { ProfileCompletionAvatar } from "./ProfileCompletionAvatar";
 import { ProfileHeaderSkeleton } from "@/components/ProfileHeaderSkeleton";
+import { openCommandPalette } from "@/lib/commandPalette";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X } from "lucide-react";
 
 const links = [
   { to: "/events", label: "Events" },
@@ -33,13 +39,11 @@ const links = [
 
 export function Navbar() {
   const { user, isInitializing } = useAuthHydration();
-  const handleSignOut = () => {
-    // TODO: wire to actual sign out
-  };
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const currentPath = location.pathname;
   const supabase = createClient();
+  const { data: completionPercentage } = useProfileCompleteness(user?.id ?? null);
 
   const navigate = useNavigate();
 
@@ -253,13 +257,10 @@ export function Navbar() {
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="User menu"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-lime font-mono text-xs font-bold uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:focus-visible:ring-cream"
-                >
-                  {user.email?.[0]?.toUpperCase() ?? "U"}
-                </button>
+                <ProfileCompletionAvatar
+                  initials={user.email?.[0]?.toUpperCase() ?? "U"}
+                  percentage={completionPercentage}
+                />
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="w-56">
@@ -303,6 +304,17 @@ export function Navbar() {
             </Link>
           )}
 
+          {/* Global search (Cmd+K) trigger — highly visible on mobile where the
+              keyboard shortcut does not exist */}
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            aria-label="Open global search"
+            className="neu-border flex h-8 w-8 shrink-0 items-center justify-center bg-white p-1 text-black transition-colors hover:bg-lime dark:bg-black dark:text-cream"
+          >
+            <Search size={18} />
+          </button>
+
           {/* Mobile menu toggle button */}
           <button
             ref={hamburgerRef}
@@ -330,13 +342,10 @@ export function Navbar() {
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label="User menu"
-                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-lime font-mono text-xs font-bold uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:focus-visible:ring-cream"
-              >
-                {user.email?.[0]?.toUpperCase() ?? "U"}
-              </button>
+              <ProfileCompletionAvatar
+                initials={user.email?.[0]?.toUpperCase() ?? "U"}
+                percentage={completionPercentage}
+              />
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-56">

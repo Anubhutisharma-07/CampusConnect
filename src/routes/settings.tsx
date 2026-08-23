@@ -1,13 +1,21 @@
 import { useNavigate, useBlocker } from "react-router-dom";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 import { SiteShell } from "@/components/site/SiteShell";
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
-import { Camera, Check, Loader2, X, Plus, CreditCard } from "lucide-react";
+import Camera from "lucide-react/dist/esm/icons/camera";
+import Check from "lucide-react/dist/esm/icons/check";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import X from "lucide-react/dist/esm/icons/x";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import CreditCard from "lucide-react/dist/esm/icons/credit-card";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
 import { OptimizedImage } from "@/components/media/OptimizedImage";
 import { Switch } from "@/components/ui/switch";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
 import type { User } from "@supabase/supabase-js";
 import { useQuery } from "@/hooks/useReactQueryReplacement";
@@ -32,6 +40,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ImageCropUpload } from "@/components/ImageCropUpload";
+import { AutoTaggingSettings } from "@/components/AutoTaggingSettings";
+import { useTheme } from "@/components/theme-provider";
 
 const FONT_SIZE_KEY = "campusconnect-font-size";
 
@@ -83,17 +93,26 @@ export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [handleAvailability, setHandleAvailability] = useState<HandleAvailability>("idle");
+  const [personalEmail, setPersonalEmail] = useState("");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [handleFeedback, setHandleFeedback] = useState<string | null>(null);
   const handleCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [borderThickness, setBorderThickness] = useState(4);
   const [borderRadius, setBorderRadius] = useState(8);
   const [isThemeDrawerOpen, setIsThemeDrawerOpen] = useState(false);
+  const [timezone, setTimezone] = useState("UTC");
+  const [quietHoursStart, setQuietHoursStart] = useState("22:00");
+  const [quietHoursEnd, setQuietHoursEnd] = useState("07:00");
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const { fontSize, increment, decrement, reset } = useFontSize();
 
   // --- Skills tags state ---
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const skillInputRef = useRef<HTMLInputElement>(null);
+  const [courseCodes, setCourseCodes] = useState<string[]>([]);
+  const [courseCodeInput, setCourseCodeInput] = useState("");
+  const courseCodeInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddSkill = () => {
     const trimmed = skillInput.trim();
@@ -115,8 +134,28 @@ export default function SettingsPage() {
     setSkills((prev) => prev.filter((s) => s !== skill));
   };
 
+  const handleAddCourseCode = () => {
+    const normalized = courseCodeInput.trim().replace(/\s+/g, " ").toUpperCase();
+    if (normalized && !courseCodes.includes(normalized))
+      setCourseCodes((prev) => [...prev, normalized]);
+    setCourseCodeInput("");
+    courseCodeInputRef.current?.focus();
+  };
+
+  const handleCourseCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddCourseCode();
+    }
+  };
+
+  const handleRemoveCourseCode = (courseCode: string) => {
+    setCourseCodes((prev) => prev.filter((code) => code !== courseCode));
+  };
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
+      console.log("SETTINGS_GET_USER_RESOLVED:", user);
       if (!user) {
         navigate("/auth", { replace: true });
       } else {
@@ -142,23 +181,111 @@ export default function SettingsPage() {
     }
   }, [navigate, supabase]);
 
-  const {
-    data: profile,
-    isLoading: isProfileLoading,
-    refetch,
-  } = useQuery({
+  const profileQuery = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user?.id)
+          .single();
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        console.error("PROFILE_QUERY_ERROR:", err);
+        throw err;
+      }
+    },
+    enabled: !!user?.id,
+  });
+
+  const [birthDate, setBirthDate] = useState("");
+  const [shareBirthday, setShareBirthday] = useState(false);
+
+  const { data: privateDetails, refetch: refetchPrivateDetails } = useQuery({
+    queryKey: ["user_private_details", user?.id],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("user_private_details")
         .select("*")
-        .eq("id", user?.id)
-        .single();
+        .eq("user_id", user?.id)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
   });
+
+  const profile = profileQuery.data;
+  const isProfileLoading = profileQuery.isLoading;
+  const refetch = profileQuery.refetch;
+
+  const { data: userPrefs, refetch: refetchPrefs } = useQuery({
+    queryKey: ["user_preferences", user?.id],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_preferences")
+          .select("*")
+          .eq("user_id", user?.id)
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        console.error("PREFS_QUERY_ERROR:", err);
+        throw err;
+      }
+    },
+    enabled: !!user?.id,
+  });
+
+  useEffect(() => {
+    if (privateDetails) {
+      setBirthDate(privateDetails.birth_date || "");
+      setShareBirthday(privateDetails.share_birthday || false);
+    }
+  }, [privateDetails]);
+
+  useEffect(() => {
+    if (userPrefs) {
+      setTimezone(userPrefs.timezone || "UTC");
+      const start = userPrefs.dnd_start_time || userPrefs.quiet_hours_start;
+      const end = userPrefs.dnd_end_time || userPrefs.quiet_hours_end;
+      if (start) {
+        setQuietHoursStart(start.substring(0, 5));
+      }
+      if (end) {
+        setQuietHoursEnd(end.substring(0, 5));
+      }
+    }
+  }, [userPrefs]);
+
+  const handleSavePrefs = async () => {
+    if (!user) return;
+    setIsSavingPrefs(true);
+    try {
+      const formattedStart = quietHoursStart ? `${quietHoursStart}:00` : null;
+      const formattedEnd = quietHoursEnd ? `${quietHoursEnd}:00` : null;
+      const { error } = await supabase.from("user_preferences").upsert({
+        user_id: user.id,
+        timezone,
+        dnd_start_time: formattedStart,
+        dnd_end_time: formattedEnd,
+        quiet_hours_start: formattedStart,
+        quiet_hours_end: formattedEnd,
+      });
+
+      if (error) throw error;
+      toast.success("Notification preferences saved successfully.");
+      refetchPrefs();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save preferences.");
+    } finally {
+      setIsSavingPrefs(false);
+    }
+  };
 
   interface UserBadge {
     id: string;
@@ -180,41 +307,34 @@ export default function SettingsPage() {
     enabled: !!user?.id,
   });
 
-  const { data: latestExportJob, refetch: refetchExportJob } = useQuery({
-    queryKey: ["latest_export_job", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("data_export_jobs")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("requested_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  const [isExporting, setIsExporting] = useState(false);
-  const handleRequestDataTakeout = async () => {
-    if (!user) return;
-    setIsExporting(true);
+  const handleAlumniTransition = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !personalEmail.trim()) return;
+    setIsTransitioning(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      // Only require the function name if we configure standard supabase client or we use fetch.
-      // We will use fetch since the existing code uses it.
-      // Note: we can also use supabase.functions.invoke.
-      const { error } = await supabase.functions.invoke("request-data-takeout");
-      if (error) throw error;
-      toast.success("Your data export is being prepared! You will receive an email shortly.");
-      refetchExportJob();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to request data takeout");
+      const { error: authError } = await supabase.auth.updateUser({
+        email: personalEmail.trim(),
+      });
+      if (authError) throw authError;
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          role: "alumni",
+          alumni_transitioned_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
+
+      toast.success(
+        "Alumni transition initiated! A confirmation link has been sent to your new email. Please confirm it to complete the authentication change.",
+      );
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to initiate alumni transition.");
     } finally {
-      setIsExporting(false);
+      setIsTransitioning(false);
     }
   };
 
@@ -306,6 +426,8 @@ export default function SettingsPage() {
       linkedinUrl: "",
       phoneNumber: "",
       role: "student",
+      expectedGraduationDate: "",
+      preferredCurrency: "USD",
     },
   });
   const {
@@ -359,10 +481,17 @@ export default function SettingsPage() {
         linkedinUrl: profile?.linkedin_url || "",
         phoneNumber: profile?.phone_number || "",
         role: (profile?.role as any) || "student",
+        expectedGraduationDate: profile?.expected_graduation_date || "",
+        preferredCurrency: profile?.preferred_currency || "USD",
       });
       // Hydrate skills from profile (text[])
       if (Array.isArray(profile?.skills)) {
         setSkills(profile.skills as string[]);
+      }
+      if (Array.isArray(profile?.course_codes)) {
+        setCourseCodes(
+          (profile.course_codes as string[]).map((courseCode) => courseCode.toUpperCase()),
+        );
       }
     }
   }, [profile, user, form]);
@@ -480,6 +609,13 @@ export default function SettingsPage() {
         linkedin_url: values.linkedinUrl || null,
         phone_number: values.phoneNumber || null,
         skills: dedupedSkills,
+        expected_graduation_date: values.expectedGraduationDate || null,
+        preferred_currency: values.preferredCurrency,
+        course_codes: [
+          ...new Set(
+            courseCodes.map((courseCode) => courseCode.trim().toUpperCase()).filter(Boolean),
+          ),
+        ],
       };
 
       const safeData = ProfileUpdateAllowlistSchema.parse(rawPayload);
@@ -559,6 +695,14 @@ export default function SettingsPage() {
 
   const pStats = profile as Record<string, any> | null;
 
+  console.log("PROFILE_QUERY_STATE:", {
+    status: profileQuery.status,
+    fetchStatus: profileQuery.fetchStatus,
+    isLoading: isProfileLoading,
+    data: profile,
+    error: profileQuery.error,
+  });
+
   if (isProfileLoading && !profile) {
     return (
       <SiteShell>
@@ -612,8 +756,30 @@ export default function SettingsPage() {
             </div>
           </div>
           {/* ------------------------------- */}
+          <Panel title="Integrations">
+            <div className="mb-6 border-2 border-black bg-lime/10 p-4 font-mono text-sm">
+              <p className="font-bold text-black uppercase mb-2">Spotify</p>
+              <p className="text-xs text-gray-700 mb-4">
+                Connect your Spotify account to easily export song requests from your events to playlists.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  // In a real implementation, this would trigger an OAuth flow with Supabase or a custom endpoint
+                  // supabase.auth.signInWithOAuth({ provider: 'spotify', options: { scopes: 'playlist-modify-public playlist-modify-private' } })
+                  toast.info('Spotify OAuth configuration required.');
+                }}
+                className="neu-border flex items-center gap-2 bg-[#1DB954] text-white px-4 py-2 font-bold uppercase transition-all hover:scale-105 active:scale-95"
+              >
+                Link Spotify Profile
+              </button>
+            </div>
+          </Panel>
+          {/* ------------------------------- */}
           <Panel title="Profile">
             <AvatarUpload name={currentFullName || "User"} avatarTheme={currentAvatarTheme} />
+
+            <BannerUpload />
 
             <AvatarThemePicker
               selected={currentAvatarTheme}
@@ -788,6 +954,34 @@ export default function SettingsPage() {
 
                 <FormField
                   control={form.control}
+                  name="preferredCurrency"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1">
+                      <FormLabel className="eyebrow font-bold text-black">
+                        Price display currency
+                      </FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full border-0 border-b-2 border-black bg-transparent px-1 py-2 font-mono text-sm outline-none focus:bg-lime/40"
+                          aria-describedby="preferred-currency-help"
+                        >
+                          {SUPPORTED_CURRENCIES.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                              {currency.code} — {currency.name}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <p id="preferred-currency-help" className="font-mono text-xs text-black/60">
+                        Ticket estimates use this currency when available. Checkout remains in USD.
+                      </p>
+                      <FormMessage className="font-mono text-xs text-destructive" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
@@ -824,19 +1018,55 @@ export default function SettingsPage() {
 
                 <FormField
                   control={form.control}
-                  name="bio"
+                  name="expectedGraduationDate"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="eyebrow font-bold text-black">Bio</FormLabel>
+                      <FormLabel className="eyebrow font-bold text-black">
+                        Expected Graduation Date
+                      </FormLabel>
                       <FormControl>
                         <input
                           {...field}
+                          type="date"
                           className="w-full border-0 border-b-2 border-black bg-transparent px-1 py-2 font-mono text-sm outline-none focus:bg-lime/40"
                         />
                       </FormControl>
                       <FormMessage className="font-mono text-xs text-destructive" />
                     </FormItem>
                   )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => {
+                    const bioValue = field.value || "";
+                    const isLimitReached = bioValue.length >= 150;
+
+                    return (
+                      <FormItem className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="eyebrow font-bold text-black">Bio</FormLabel>
+                          <span
+                            aria-label="Character limit"
+                            className={`font-mono text-xs font-bold transition-colors ${
+                              isLimitReached ? "text-red-600" : "text-muted-foreground"
+                            }`}
+                          >
+                            {bioValue.length}/150 characters
+                          </span>
+                        </div>
+                        <FormControl>
+                          <input
+                            {...field}
+                            maxLength={150}
+                            className="w-full border-0 border-b-2 border-black bg-transparent px-1 py-2 font-mono text-sm outline-none focus:bg-lime/40"
+                          />
+                        </FormControl>
+                        <FormMessage className="font-mono text-xs text-destructive" />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 {/* ── Skills Tags Editor ── */}
@@ -886,6 +1116,51 @@ export default function SettingsPage() {
                       onClick={handleAddSkill}
                       aria-label="Add skill"
                       className="neu-border bg-black p-2 text-cream transition-all hover:scale-105 active:scale-95"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t-2 border-black pt-5">
+                  <p className="eyebrow font-bold text-black">Courses for study matching</p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    Add exact course codes to see matching study tables in your Feed.
+                  </p>
+                  {courseCodes.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {courseCodes.map((courseCode) => (
+                        <span
+                          key={courseCode}
+                          className="neu-border inline-flex items-center gap-1 bg-[#bae6fd] px-2.5 py-1 font-mono text-xs font-bold"
+                        >
+                          {courseCode}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCourseCode(courseCode)}
+                            aria-label={`Remove course code ${courseCode}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={courseCodeInputRef}
+                      value={courseCodeInput}
+                      onChange={(e) => setCourseCodeInput(e.target.value)}
+                      onKeyDown={handleCourseCodeKeyDown}
+                      placeholder="e.g. CALC 101"
+                      maxLength={32}
+                      className="flex-1 border-0 border-b-2 border-black bg-transparent px-1 py-2 font-mono text-sm uppercase outline-none focus:bg-lime/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCourseCode}
+                      aria-label="Add course code"
+                      className="neu-border bg-black p-2 text-cream"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -952,6 +1227,10 @@ export default function SettingsPage() {
             </div>
           </Panel>
 
+          <Panel title="Language Preferences">
+            <LanguageSwitcher />
+          </Panel>
+
           <Panel title="Text Size">
             <div className="flex items-center gap-4">
               <button
@@ -985,83 +1264,233 @@ export default function SettingsPage() {
             <Toggle label="Email me about upcoming RSVPs" defaultChecked />
             <Toggle label="Weekly digest of club activity" defaultChecked />
             <Toggle label="New certificates" />
+
+            <div className="mt-6 border-t-2 border-black pt-6 space-y-4 text-black">
+              <h3 className="font-bold uppercase text-black">Quiet Hours & Timezone</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="timezone" className="font-mono text-xs font-bold uppercase">
+                    Timezone
+                  </label>
+                  <select
+                    id="timezone"
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full border-2 border-black bg-white px-3 py-2 font-mono text-sm outline-none focus:bg-lime/20"
+                  >
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">America/New_York</option>
+                    <option value="Asia/Kolkata">Asia/Kolkata</option>
+                    <option value="Europe/London">Europe/London</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="quiet-start" className="font-mono text-xs font-bold uppercase">
+                    Quiet Start
+                  </label>
+                  <input
+                    id="quiet-start"
+                    type="time"
+                    value={quietHoursStart}
+                    onChange={(e) => setQuietHoursStart(e.target.value)}
+                    className="w-full border-2 border-black bg-white px-3 py-2 font-mono text-sm outline-none focus:bg-lime/20"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="quiet-end" className="font-mono text-xs font-bold uppercase">
+                    Quiet End
+                  </label>
+                  <input
+                    id="quiet-end"
+                    type="time"
+                    value={quietHoursEnd}
+                    onChange={(e) => setQuietHoursEnd(e.target.value)}
+                    className="w-full border-2 border-black bg-white px-3 py-2 font-mono text-sm outline-none focus:bg-lime/20"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSavePrefs}
+                disabled={isSavingPrefs}
+                className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream disabled:opacity-50"
+              >
+                {isSavingPrefs ? "Saving..." : "Save Notification Preferences"}
+              </button>
+            </div>
+          </Panel>
+
+          <Panel title="Auto-Tagging (Facial Recognition)">
+            <AutoTaggingSettings user={user} />
+          </Panel>
+
+          <Panel title="Birthday Settings (Privacy Controls)">
+            <div className="space-y-4">
+              <p className="font-mono text-xs text-muted-foreground">
+                If you opt-in, we will notify your Club Executives 3 days before your birthday, and
+                optionally post a celebratory shoutout to the club forum. Your birthday is kept
+                strictly private otherwise.
+              </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="eyebrow font-bold text-black">Birth Date</label>
+                  <input
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="w-full border-2 border-black bg-white px-2 py-2 font-mono text-sm outline-none focus:bg-lime/40"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 pt-4 sm:pt-6">
+                  <div>
+                    <label className="eyebrow font-bold text-black">Opt-In to Share</label>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      Share birthday with Club Executives
+                    </p>
+                  </div>
+                  <Switch checked={shareBirthday} onCheckedChange={setShareBirthday} />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (!user) return;
+                      const { error } = await supabase.from("user_private_details").upsert({
+                        user_id: user.id,
+                        birth_date: birthDate ? birthDate : null,
+                        share_birthday: shareBirthday,
+                      });
+                      if (error) throw error;
+                      toast.success("Birthday privacy settings saved!");
+                      refetchPrivateDetails();
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed to save birthday settings.");
+                    }
+                  }}
+                  className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream hover:scale-105 active:scale-95 transition-all"
+                >
+                  Save Birthday Settings
+                </button>
+              </div>
+            </div>
           </Panel>
 
           <Panel title="Privacy / Account">
             <div className="space-y-4">
               <div>
-                <h3 className="font-bold text-black uppercase mb-1">Download My Data</h3>
-                <p className="font-mono text-xs text-muted-foreground">
-                  Request a copy of all your personal data (RSVPs, posts, comments, etc.). This
-                  process runs in the background. You will receive an email with a secure download
-                  link when it's ready.
+                <h3 className="font-bold text-black uppercase mb-1">Data Portability & Deletion</h3>
+                <p className="font-mono text-xs text-muted-foreground mb-4">
+                  Manage your data, request exports of your personal information, or permanently
+                  delete your account and all associated data.
                 </p>
-              </div>
-
-              {latestExportJob?.status === "processing" || latestExportJob?.status === "pending" ? (
-                <div className="flex items-center gap-2 p-3 bg-lime/20 border-2 border-black">
-                  <Loader2 className="h-4 w-4 animate-spin text-black" />
-                  <span className="font-mono text-sm font-bold uppercase">
-                    Your export is being prepared...
-                  </span>
-                </div>
-              ) : latestExportJob?.status === "completed" &&
-                new Date(latestExportJob.expires_at) > new Date() ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-3 bg-green-100 border-2 border-black">
-                    <Check className="h-4 w-4 text-green-700" />
-                    <span className="font-mono text-sm font-bold uppercase text-green-800">
-                      Export Ready
-                    </span>
-                  </div>
-                  <p className="font-mono text-xs text-black">
-                    Please check your email for the download link, or request a new one.
-                  </p>
-                  <button
-                    onClick={handleRequestDataTakeout}
-                    disabled={isExporting}
-                    className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream disabled:opacity-50"
-                  >
-                    {isExporting ? "Requesting..." : "Request New Export"}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleRequestDataTakeout}
-                  disabled={isExporting}
-                  className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream disabled:opacity-50"
+                <Link
+                  to="/settings/data"
+                  className="inline-block neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream"
                 >
-                  {isExporting ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Requesting...
-                    </span>
-                  ) : (
-                    "Download My Data"
-                  )}
-                </button>
-              )}
+                  Manage Data & Privacy
+                </Link>
+              </div>
             </div>
           </Panel>
 
-          <Panel title="Danger zone" tone="bg-red-50">
-            <button
-              onClick={() => setConfirmOpen(true)}
-              className="neu-border neu-press bg-brand-blue-dark px-4 py-2 font-mono text-xs font-bold uppercase text-white"
-            >
-              Delete account
-            </button>
+          {profile?.role !== "alumni" && (
+            <Panel title="Alumni Account Transition" tone="bg-[#e0f2fe]">
+              <div className="space-y-4">
+                <p className="font-mono text-xs text-gray-700">
+                  Graduating soon? Transition your account to an Alumni status. This allows you to
+                  retain your profile using a personal email address (like Gmail) after your
+                  university email is deactivated.
+                </p>
+                <div className="bg-amber-50 border-2 border-black p-3 font-mono text-[10px] text-amber-800">
+                  ⚠️ Note: A 3-month grace period begins immediately, during which you will retain
+                  full student capabilities. After 3 months, you will be restricted from RSVPing to
+                  student-only events or holding active club executive roles.
+                </div>
+                <form onSubmit={handleAlumniTransition} className="space-y-4">
+                  <div className="space-y-1">
+                    <label htmlFor="personalEmail" className="eyebrow font-bold text-black">
+                      New Personal Email Address
+                    </label>
+                    <input
+                      id="personalEmail"
+                      type="email"
+                      required
+                      placeholder="your.name@gmail.com"
+                      value={personalEmail}
+                      onChange={(e) => setPersonalEmail(e.target.value)}
+                      className="w-full border-2 border-black bg-white px-3 py-2 font-mono text-sm outline-none focus:bg-lime/20"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isTransitioning || !personalEmail}
+                    className="neu-border neu-press bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 py-2 font-mono text-xs font-bold uppercase disabled:opacity-50"
+                  >
+                    {isTransitioning ? "Transitioning..." : "Transition Account to Alumni"}
+                  </button>
+                </form>
+              </div>
+            </Panel>
+          )}
 
-            <ConfirmModal
-              open={confirmOpen}
-              title="Delete account?"
-              description="This action cannot be undone."
-              confirmText="Delete"
-              cancelText="Cancel"
-              onCancel={() => setConfirmOpen(false)}
-              onConfirm={() => {
-                setConfirmOpen(false);
-              }}
-            />
+          {profile?.role === "alumni" && (
+            <Panel title="Alumni Account Status" tone="bg-[#f0fdf4]">
+              <div className="space-y-3 font-mono text-xs text-gray-700">
+                <p className="font-bold text-emerald-800 flex items-center gap-1.5">
+                  ✓ Alumni Status Active
+                </p>
+                <p>
+                  Transitioned on:{" "}
+                  <strong>
+                    {profile.alumni_transitioned_at
+                      ? new Date(profile.alumni_transitioned_at).toLocaleDateString()
+                      : "Recently"}
+                  </strong>
+                </p>
+                {profile.alumni_transitioned_at && (
+                  <p>
+                    Grace Period Status:{" "}
+                    {new Date(profile.alumni_transitioned_at).getTime() + 90 * 24 * 60 * 60 * 1000 >
+                    Date.now() ? (
+                      <span className="text-blue-700 font-bold">
+                        Active (Student privileges remain for summer handover)
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 font-bold">
+                        Expired (Standard Alumni restrictions active)
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            </Panel>
+          )}
+
+          <Panel title="Danger zone" tone="bg-red-50">
+            <div className="space-y-4">
+              <p className="font-mono text-xs text-red-700 font-bold uppercase">
+                ⚠️ Danger Zone: Account Deletion (GDPR Right to be Forgotten)
+              </p>
+              <p className="font-mono text-xs text-muted-foreground">
+                This will permanently delete your account, your profile, your event RSVPs, your
+                waitlist positions, and clean up any personal files. Your forum posts will be
+                anonymized, and transaction records will be scrubbed of PII but retained for
+                financial audits.
+              </p>
+              <button
+                onClick={() => setConfirmOpen(true)}
+                className="neu-border neu-press bg-red-600 hover:bg-red-700 px-4 py-2 font-mono text-xs font-bold uppercase text-white"
+              >
+                Delete account
+              </button>
+            </div>
+
+            <DeleteAccountModal open={confirmOpen} onClose={() => setConfirmOpen(false)} />
           </Panel>
         </div>
       </section>
@@ -1332,6 +1761,142 @@ function AvatarUpload({ name, avatarTheme }: { name: string; avatarTheme?: Avata
     </div>
   );
 }
+function BannerUpload() {
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+  const [preview, setPreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBanner() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("banner_url")
+        .eq("id", user.id)
+        .single();
+
+      if (isMounted && !error && data?.banner_url) {
+        setPreview(data.banner_url);
+        setImageError(false);
+      }
+    }
+
+    loadBanner();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
+
+  async function handleUploaded(url: string) {
+    setPreview(url);
+    setImageError(false);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ banner_url: url })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error(updateError);
+      toast.error("Failed to save profile banner.");
+    }
+  }
+
+  async function handleRemove() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setRemoving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ banner_url: null })
+        .eq("id", user.id);
+      if (error) throw error;
+      setPreview(null);
+      setImageError(false);
+      toast.success("Banner removed.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to remove banner.");
+    } finally {
+      setRemoving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4 border-b-2 border-black pb-6">
+      <div>
+        <p className="eyebrow font-bold text-black">Profile banner</p>
+        <p className="font-mono text-xs text-muted-foreground">
+          A wide header image shown behind your avatar. Cropped to 3:1 and compressed automatically
+          before upload.
+        </p>
+      </div>
+
+      {preview && !imageError && (
+        <div className="relative w-full overflow-hidden border-2 border-black">
+          <OptimizedImage
+            src={preview}
+            alt="Profile banner preview"
+            className="w-full"
+            width={1500}
+            height={500}
+            quality={80}
+            responsiveWidths={[600, 1200, 1500]}
+            sizes="(max-width: 768px) 100vw, 896px"
+            onError={() => setImageError(true)}
+            fallback={<div className="h-32 w-full bg-gray-200" aria-hidden="true" />}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[240px]">
+          <ImageCropUpload
+            aspect={3}
+            bucket="profile-banners"
+            value={preview ?? undefined}
+            onUploaded={handleUploaded}
+            accept="image/jpeg,image/png,image/webp"
+            maxSizeBytes={5 * 1024 * 1024}
+            maxWidth={1500}
+            label="profile banner"
+            hint="JPG, PNG or WEBP · Max 5 MB · Wide 3:1 images look best"
+          />
+        </div>
+
+        {preview && !imageError && (
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={removing}
+            className="neu-border bg-red-100 px-4 py-2 font-mono text-xs font-bold uppercase text-red-700 hover:bg-red-200 disabled:opacity-50"
+          >
+            {removing ? "Removing..." : "Remove banner"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ThemeToggle({
   theme,
   setTheme,

@@ -18,11 +18,14 @@ import { getPresenceBadgeClass, usePresence } from "@/hooks/usePresence";
 import { UserProfileSkeleton } from "@/components/UserProfileSkeleton";
 import { HistoryTimeline, TimelineItem } from "@/components/profile/HistoryTimeline";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
+import { ProfileBadgeGallery } from "@/components/gamification/ProfileBadgeGallery";
+import { ProfileGamificationStats } from "@/components/gamification/ProfileGamificationStats";
 import { ProgressRing } from "@/components/profile/ProgressRing";
-
 import { useState, useEffect } from "react";
 import { SharedClubsSection } from "@/components/profile/SharedClubsSection";
 import { getSharedClubs } from "@/lib/sharedClubs";
+import { ReportDialog } from "@/components/ReportDialog";
+import { AlertTriangle } from "lucide-react";
 
 function getInitials(name: string) {
   return name
@@ -38,6 +41,7 @@ export default function Profile() {
   const { handle } = useParams();
   const supabase = createClient();
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+  const [isReporting, setIsReporting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -104,10 +108,16 @@ export default function Profile() {
     queryKey: ["profileEvents", profile?.id],
     queryFn: async () => {
       if (!profile) return [];
-      const { data } = await supabase
+      let query = supabase
         .from("event_rsvps")
         .select("events (id, title, event_date, clubs (slug, name))")
         .eq("user_id", profile.id);
+
+      if (!user || user.id !== profile.id) {
+        query = query.eq("is_anonymous", false);
+      }
+
+      const { data } = await query;
 
       const events = (data || [])
         .map((r) => (Array.isArray(r.events) ? r.events[0] : r.events))
@@ -145,10 +155,16 @@ export default function Profile() {
           .select("id, joined_at, clubs (name, slug)")
           .eq("user_id", profile.id)
           .eq("status", "approved"),
-        supabase
-          .from("event_rsvps")
-          .select("id, rsvp_at, events (id, title, event_date)")
-          .eq("user_id", profile.id),
+        (() => {
+          let query = supabase
+            .from("event_rsvps")
+            .select("id, rsvp_at, events (id, title, event_date)")
+            .eq("user_id", profile.id);
+          if (!user || user.id !== profile.id) {
+            query = query.eq("is_anonymous", false);
+          }
+          return query;
+        })(),
         supabase
           .from("posts")
           .select("id, content, created_at, clubs (name, slug)")
@@ -282,6 +298,18 @@ export default function Profile() {
                     {skill}
                   </span>
                 ))}
+              </div>
+            )}
+
+            {currentUser && currentUser.id !== profile.id && (
+              <div className="pt-4 flex justify-center md:justify-start">
+                <button
+                  onClick={() => setIsReporting(true)}
+                  className="flex items-center gap-1.5 text-red-500 hover:text-red-700 font-mono text-xs font-bold uppercase transition-colors"
+                >
+                  <AlertTriangle size={14} />
+                  Report User
+                </button>
               </div>
             )}
           </div>
@@ -453,6 +481,9 @@ export default function Profile() {
             <AttendanceHeatmap userId={profile.id} />
           </div>
 
+          {/* Custom Interactive Badges Section */}
+          <ProfileGamificationStats userId={profile.id} isOwnProfile={!isViewingOtherProfile} />
+          <ProfileBadgeGallery userId={profile.id} />
           {/* Activity History Section */}
           <div className="space-y-6">
             <div className="flex items-center gap-2 border-b-2 border-black pb-2 text-xl font-bold font-display">
@@ -463,6 +494,15 @@ export default function Profile() {
           </div>
         </div>
       </section>
+
+      {isReporting && profile && (
+        <ReportDialog
+          targetType="profile"
+          targetId={profile.id}
+          isOpen={isReporting}
+          onClose={() => setIsReporting(false)}
+        />
+      )}
     </SiteShell>
   );
 }

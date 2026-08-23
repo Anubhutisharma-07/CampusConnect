@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type Control } from "react-hook-form";
-import { Edit3, GitMerge } from "lucide-react";
+import Edit3 from "lucide-react/dist/esm/icons/edit-3";
+import GitMerge from "lucide-react/dist/esm/icons/git-merge";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 
@@ -91,9 +92,12 @@ export function EditEventDialog({ event, user, onSuccess }: EditEventDialogProps
       description: event.description || "",
       category: (event.category_id as string) || "",
       location: event.location || "",
+      is_outdoor: event.is_outdoor || false,
+      backup_indoor_venue: event.backup_indoor_venue || "",
       startDate: event.start_date ? new Date(event.start_date).toISOString().slice(0, 16) : "",
       endDate: event.end_date ? new Date(event.end_date).toISOString().slice(0, 16) : "",
       tags: event.tags || [],
+      dress_code: event.dress_code || "",
     },
     mode: "onBlur",
   });
@@ -111,6 +115,7 @@ export function EditEventDialog({ event, user, onSuccess }: EditEventDialogProps
         startDate: event.start_date ? new Date(event.start_date).toISOString().slice(0, 16) : "",
         endDate: event.end_date ? new Date(event.end_date).toISOString().slice(0, 16) : "",
         tags: event.tags || [],
+        dress_code: event.dress_code || "",
       });
     }
   }, [open, event, form]);
@@ -136,6 +141,7 @@ export function EditEventDialog({ event, user, onSuccess }: EditEventDialogProps
           end_date: docToSave.end_date,
           event_date: docToSave.start_date,
           tags: docToSave.tags || [],
+          dress_code: docToSave.dress_code || null,
           version_vector: docToSave.version_vector || {},
           version: docToSave.version || 1,
         })
@@ -226,9 +232,12 @@ export function EditEventDialog({ event, user, onSuccess }: EditEventDialogProps
         description: values.description.trim(),
         category_id: values.category || null,
         location: values.location?.trim() || null,
+        is_outdoor: values.is_outdoor || false,
+        backup_indoor_venue: values.backup_indoor_venue?.trim() || null,
         start_date: new Date(values.startDate).toISOString(),
         end_date: new Date(values.endDate).toISOString(),
         tags: values.tags || [],
+        dress_code: values.dress_code || null,
         version_vector: (baseSnapshot.version_vector || {}) as VersionVector,
       };
 
@@ -373,6 +382,34 @@ export function EditEventDialog({ event, user, onSuccess }: EditEventDialogProps
 
               <FormField
                 control={control}
+                name="dress_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dress Code</FormLabel>
+                    <Select
+                      onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select event dress code (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No Specific Dress Code</SelectItem>
+                        <SelectItem value="casual">Casual</SelectItem>
+                        <SelectItem value="smart_casual">Smart Casual</SelectItem>
+                        <SelectItem value="business_casual">Business Casual</SelectItem>
+                        <SelectItem value="formal">Formal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
                 name="location"
                 render={({ field }) => (
                   <FormItem>
@@ -384,7 +421,52 @@ export function EditEventDialog({ event, user, onSuccess }: EditEventDialogProps
                   </FormItem>
                 )}
               />
+              <FormField
+                control={control}
+                name="is_outdoor"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="mt-1"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="cursor-pointer font-medium">Outdoor Event</FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Mark this as an outdoor event to enable automated weather alerts.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
 
+              {form.watch("is_outdoor") && (
+                <FormField
+                  control={control}
+                  name="backup_indoor_venue"
+                  render={({ field }) => (
+                    <FormItem className="rounded-md border p-4">
+                      <FormLabel>Backup Indoor Venue</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. Student Union Hall"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        If severe weather is forecasted, you will be prompted to automatically pivot
+                        the event here.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
                   control={control}

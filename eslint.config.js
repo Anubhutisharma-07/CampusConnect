@@ -1,5 +1,10 @@
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import storybook from "eslint-plugin-storybook";
+let storybookConfig = {};
+try {
+  const storybook = await import("eslint-plugin-storybook");
+  storybookConfig = storybook.default?.configs?.["flat/recommended"] || {};
+} catch {
+  // storybook plugin optional
+}
 
 import js from "@eslint/js";
 import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
@@ -25,6 +30,7 @@ export default tseslint.config(
       "supabase/functions",
       ".history/**",
       "wasm/image-compressor/pkg",
+      "public/~partytown/**",
     ],
   },
   {
@@ -95,5 +101,5 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
-  storybook.configs["flat/recommended"],
+  storybookConfig,
 );

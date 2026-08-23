@@ -3,6 +3,7 @@ import { useEventWizardStore } from "../../../store/useEventWizardStore";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Checkbox } from "../../ui/checkbox";
+import { LocationAutocomplete } from "../../LocationAutocomplete";
 
 /**
  * Step 2: Date & Location.
@@ -47,16 +48,21 @@ export function DateLocationStepForm() {
 
       <div className="space-y-2">
         <Label htmlFor="location">Location *</Label>
-        <Input
-          id="location"
+        <LocationAutocomplete
           value={formData.location}
-          onChange={(e) => updateFormData({ location: e.target.value })}
-          placeholder="e.g. Student Union, Room 101"
-          aria-invalid={!!validationErrors.location}
+          latitude={formData.latitude}
+          longitude={formData.longitude}
+          required
+          placeholder='Search for a venue, address, or type "Online"'
+          onChange={(location, coordinates) =>
+            updateFormData({
+              location,
+              latitude: coordinates?.latitude ?? null,
+              longitude: coordinates?.longitude ?? null,
+            })
+          }
+          error={validationErrors.location}
         />
-        {validationErrors.location && (
-          <p className="text-sm text-red-600 dark:text-red-400">{validationErrors.location}</p>
-        )}
       </div>
 
       <div className="flex items-center space-x-2">
@@ -83,6 +89,55 @@ export function DateLocationStepForm() {
           />
           {validationErrors.meetingUrl && (
             <p className="text-sm text-red-600 dark:text-red-400">{validationErrors.meetingUrl}</p>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="isOutdoor"
+          checked={formData.isOutdoor}
+          onCheckedChange={(checked) => updateFormData({ isOutdoor: checked === true })}
+        />
+        <Label htmlFor="isOutdoor" className="cursor-pointer">
+          Outdoor Event
+        </Label>
+      </div>
+
+      <div className="flex items-start space-x-2">
+        <Checkbox
+          id="hasPhotography"
+          checked={formData.hasPhotography}
+          onCheckedChange={(checked) => updateFormData({ hasPhotography: checked === true })}
+        />
+        <div className="space-y-1">
+          <Label htmlFor="hasPhotography" className="cursor-pointer">
+            Photography or filming planned
+          </Label>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Attendees will be asked for a required media-consent choice during RSVP.
+          </p>
+        </div>
+      </div>
+
+      {formData.isOutdoor && (
+        <div className="space-y-2">
+          <Label htmlFor="backupIndoorVenue">Backup Indoor Venue</Label>
+          <Input
+            id="backupIndoorVenue"
+            value={formData.backupIndoorVenue ?? ""}
+            onChange={(e) => updateFormData({ backupIndoorVenue: e.target.value })}
+            placeholder="e.g. Student Union Hall"
+            aria-invalid={!!validationErrors.backupIndoorVenue}
+          />
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            If severe weather is forecasted, you will be prompted to automatically pivot the event
+            here.
+          </p>
+          {validationErrors.backupIndoorVenue && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {validationErrors.backupIndoorVenue}
+            </p>
           )}
         </div>
       )}

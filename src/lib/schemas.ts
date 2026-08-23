@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { getPasswordStrength } from "@/components/ui/password-strength";
+import { SUPPORTED_CURRENCY_CODES } from "@/lib/currency";
 
 // --- Database Native Enums (#2020) -------------------------------------------
 
@@ -103,6 +105,8 @@ export const profileSchema = z.object({
       if (!val) return true;
       return /^\+?[0-9\s\-()]{10,20}$/.test(val);
     }, "Please enter a valid phone number (minimum 10 digits)."),
+  expectedGraduationDate: z.string().optional().or(z.literal("")),
+  preferredCurrency: z.enum(SUPPORTED_CURRENCY_CODES).default("USD"),
 });
 
 export type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -152,7 +156,8 @@ export const signUpSchema = z
       .trim()
       .min(1, "Email is required.")
       .max(255, "Email cannot exceed 255 characters.")
-      .email("Please enter a valid email address."),
+      .email("Please enter a valid email address.")
+      .refine((val) => val.endsWith(".edu"), "University email (.edu) is required to sign up."),
     password: passwordRules,
     confirmPassword: z.string().min(1, "Please confirm your password."),
     newsletterOptIn: z.boolean().default(false),
@@ -164,7 +169,6 @@ export const signUpSchema = z
   .refine(
     (data) => {
       if (!data.password) return true;
-      const { getPasswordStrength } = require("@/components/ui/password-strength");
       const result = getPasswordStrength(
         data.password,
         [data.firstName, data.lastName, data.email].filter(Boolean),
@@ -222,6 +226,8 @@ export const ProfileUpdateAllowlistSchema = z
     linkedin_url: z.string().trim().nullable().optional(),
     phone_number: z.string().trim().nullable().optional(),
     skills: z.array(z.string()).optional(),
+    expected_graduation_date: z.string().nullable().optional().or(z.literal("")),
+    preferred_currency: z.enum(SUPPORTED_CURRENCY_CODES),
   })
   .strict(); // Strips or rejects any unmapped properties
 
