@@ -30,6 +30,8 @@ import { DietaryForecastPanel } from "@/components/events/DietaryForecastPanel";
 import { User } from "@supabase/supabase-js";
 import { ScavengerHuntWidget } from "@/components/events/ScavengerHuntWidget";
 import { SongRequestSection } from "@/components/events/SongRequestSection";
+import { RealTimeEventParkingMap } from "@/components/events/RealTimeEventParkingMap";
+import { SponsorBountiesSection } from "@/components/events/SponsorBountiesSection";
 
 interface EventDetailRecord {
   id: string;
@@ -146,6 +148,11 @@ export default function EventDetail() {
             {event.location}
           </span>
         )}
+        <div className="flex flex-wrap gap-x-8 gap-y-4 font-mono text-sm text-gray-700">
+          {/* ── NEW: dual-clock time display (Issue #3680) ── */}
+          <div className="min-w-[260px]">
+            <EventDualClockTime data={dualClock} venueLabel={venueLabel} variant="full" />
+          </div>
 
         {event.description && <p className="whitespace-pre-wrap leading-7">{event.description}</p>}
 
@@ -193,6 +200,7 @@ export default function EventDetail() {
 
       <div className="max-w-4xl mx-auto px-6 md:px-8 mb-8">
         <SongRequestSection eventId={event.id} isOrganizer={false} />
+        {event.id && <SponsorBountiesSection eventId={event.id} />}
       </div>
 
       <EventFeedbackSurvey eventId={event.id} />
