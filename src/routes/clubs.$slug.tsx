@@ -23,7 +23,9 @@ import { AudioReactiveBackground } from "@/components/media/AudioReactiveBackgro
 import LazyHydrate from "@/components/LazyHydrate";
 import { NotFoundPage as NotFound } from "@/components/NotFoundPage";
 import { MerchStore } from "@/components/Clubs/Merchandise/MerchStore";
+
 import { CrowdfundingCampaignSection } from "@/components/Clubs/Crowdfunding/CrowdfundingCampaignSection";
+ upstream/main
 import { ClubTransparencyLedger } from "@/components/Clubs/ClubTransparencyLedger";
 import { ClubKnowledgeBaseSection } from "@/components/Clubs/ClubKnowledgeBaseSection";
 import {
@@ -982,11 +984,14 @@ export default function ClubProfile() {
 
         <ClubTransparencyLedger clubId={club.id} />
 
+ HEAD
         <section className="px-4 py-12 md:px-6">
           <div className="mx-auto max-w-6xl">
             <CrowdfundingCampaignSection clubId={club.id} />
           </div>
         </section>
+ feature/assistant-persistence-2044
+
 
         <section className="px-4 py-6 md:px-6">
           <div className="mx-auto max-w-6xl">
@@ -994,6 +999,7 @@ export default function ClubProfile() {
           </div>
         </section>
 
+ main
         <section className="px-4 py-12 md:px-6 bg-gray-50 border-t-2 border-black">
           <div className="mx-auto max-w-6xl">
             <div className="mb-6 flex items-center justify-between">

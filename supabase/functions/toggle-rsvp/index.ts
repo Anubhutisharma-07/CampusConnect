@@ -267,6 +267,9 @@ serve(async (req: Request) => {
       // 1.5 Pre-flight Prerequisite Verification
       const { data: eventData, error: eventErr } = await supabase
         .from("events")
+ feature/assistant-persistence-2044
+
+
         .select("prerequisite_event_id, title, has_photography, is_high_demand")
         .eq("id", eventId)
         .single();
@@ -346,6 +349,7 @@ serve(async (req: Request) => {
         }
       }
 
+ main
       if (eventData?.has_photography && noMediaConsent == null) {
         return respond(
           { error: "Media consent choice is required for this photography event." },
@@ -364,6 +368,26 @@ serve(async (req: Request) => {
             {
               error: `You must attend the prerequisite event before registering for this event.`,
             },
+ feature/assistant-persistence-2044
+ HEAD
+
+ feature/waitlist-churn-predictor
+ feature/waitlist-churn-predictor
+
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+ feature/club-lifecycle-monitor-3610
+
+ main
+ feature/vendor-contract-nudges
+ main
+            403
+
+
+ main
+ upstream/main
+
+ main
             403,
           );
         }
