@@ -267,7 +267,11 @@ serve(async (req: Request) => {
       // 1.5 Pre-flight Prerequisite Verification
       const { data: eventData, error: eventErr } = await supabase
         .from("events")
+ feature/geofenced-checkin-4035
+ feature/geofenced-checkin-4035
+
  feature/assistant-persistence-2044
+ main
 
 
         .select("prerequisite_event_id, title, has_photography, is_high_demand")
@@ -368,7 +372,11 @@ serve(async (req: Request) => {
             {
               error: `You must attend the prerequisite event before registering for this event.`,
             },
+ feature/geofenced-checkin-4035
+ feature/geofenced-checkin-4035
+
  feature/assistant-persistence-2044
+ main
  HEAD
 
  feature/waitlist-churn-predictor
