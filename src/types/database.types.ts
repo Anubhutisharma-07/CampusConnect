@@ -4159,6 +4159,42 @@ export type Database = {
           },
         ];
       };
+      peer_listener_verifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          major: string;
+          academic_year: number;
+          status: "pending" | "verified" | "suspended";
+          verified_by: string | null;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          major: string;
+          academic_year: number;
+          status?: "pending" | "verified" | "suspended";
+          verified_by?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          major?: string;
+          academic_year?: number;
+          status?: "pending" | "verified" | "suspended";
+          verified_by?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       create_event_flash_sale: {
@@ -4274,6 +4310,22 @@ export type Database = {
       submit_vendor_portfolio_review: {
         Args: { p_bid_id: string; p_rating: number; p_comment?: string | null };
         Returns: Database["public"]["Tables"]["vendor_portfolio_reviews"]["Row"];
+      };
+      is_peer_listener: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      grant_peer_listener_role: {
+        Args: {
+          p_user_id: string;
+          p_major: string;
+          p_academic_year: number;
+        };
+        Returns: Database["public"]["Tables"]["peer_listener_verifications"]["Row"];
+      };
+      revoke_peer_listener_role: {
+        Args: { p_user_id: string };
+        Returns: boolean;
       };
       get_open_feedback_safety_alerts: {
         Args: Record<string, never>;
@@ -4545,7 +4597,7 @@ export type Database = {
       };
     };
     Enums: {
-      user_role: "student" | "admin" | "faculty" | "owner" | "system_admin";
+      user_role: "student" | "admin" | "faculty" | "owner" | "system_admin" | "peer_listener";
       club_visibility: "public" | "private" | "unlisted";
       event_status:
         | "upcoming"
