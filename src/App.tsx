@@ -338,6 +338,8 @@ const router = createBrowserRouter(
           <Route path="/events/:eventId/gantt" element={<EventGantt />} />
           {/* Events Map View with clustering */}
           <Route path="events/map" element={<EventsMapPage />} />
+          <Route path="events/ticketing" element={<LazyTicketingDemo />} />
+          <Route path="events/ticketing" element={<LazyTicketingDemo />} />
           {/* Campus Heatmap - Live Activity */}
           <Route path="/map" element={<MapPage />} />
           <Route path="/tours/manage" element={<TourManager />} />
