@@ -267,8 +267,13 @@ serve(async (req: Request) => {
       // 1.5 Pre-flight Prerequisite Verification
       const { data: eventData, error: eventErr } = await supabase
         .from("events")
+ feature/rsvp-prereq-blocker-3946
+ feature/rsvp-prereq-blocker-3946
+ feature/rsvp-prereq-blocker-3946
+
  feature/geofenced-checkin-4035
  feature/geofenced-checkin-4035
+ main
 
  feature/assistant-persistence-2044
  main
@@ -372,8 +377,13 @@ serve(async (req: Request) => {
             {
               error: `You must attend the prerequisite event before registering for this event.`,
             },
+ feature/rsvp-prereq-blocker-3946
+ feature/rsvp-prereq-blocker-3946
+ feature/rsvp-prereq-blocker-3946
+
  feature/geofenced-checkin-4035
  feature/geofenced-checkin-4035
+ main
 
  feature/assistant-persistence-2044
  main
