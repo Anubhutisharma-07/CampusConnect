@@ -155,6 +155,7 @@ const MfaChallenge = lazy(() => import("./routes/mfa-challenge"));
 const ComplianceCheck = lazy(() => import("./routes/compliance-check"));
 const VolunteerRecord = lazy(() => import("./routes/volunteer-record"));
 const FacilityDashboard = lazy(() => import("./routes/facility-dashboard"));
+const ApiPlayground = lazy(() => import("./routes/api-playground"));
 
 const EventsLayout = lazy(() => import("./pages/Events/EventsLayout"));
 const LazyEventsIndex = lazy(() => import("./pages/Events/EventsList"));
@@ -316,6 +317,7 @@ const router = createBrowserRouter(
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/facility-dashboard" element={<FacilityDashboard />} />
+                <Route path="/api-playground" element={<ApiPlayground />} />
                 <Route path="/settings/data" element={<SettingsData />} />
                 <Route path="/recap" element={<Recap />} />
                 <Route path="/volunteer-record" element={<VolunteerRecord />} />
