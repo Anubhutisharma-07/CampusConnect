@@ -3958,6 +3958,8 @@ export type Database = {
           name: string;
           price: number;
           capacity: number | null;
+          capacity_percentage: number | null;
+          is_dynamic_capacity: boolean;
           description: string | null;
           is_early_bird: boolean;
           early_bird_end_date: string | null;
@@ -3974,6 +3976,8 @@ export type Database = {
           name: string;
           price: number;
           capacity?: number | null;
+          capacity_percentage?: number | null;
+          is_dynamic_capacity?: boolean;
           description?: string | null;
           is_early_bird?: boolean;
           early_bird_end_date?: string | null;
@@ -3990,6 +3994,8 @@ export type Database = {
           name?: string;
           price?: number;
           capacity?: number | null;
+          capacity_percentage?: number | null;
+          is_dynamic_capacity?: boolean;
           description?: string | null;
           is_early_bird?: boolean;
           early_bird_end_date?: string | null;
