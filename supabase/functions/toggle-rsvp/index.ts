@@ -267,7 +267,11 @@ serve(async (req: Request) => {
       // 1.5 Pre-flight Prerequisite Verification
       const { data: eventData, error: eventErr } = await supabase
         .from("events")
+ feature/design-marketplace-4049
+ /design-marketplace-4049
+
  feature/membership-trial-period-4406
+ main
 
 
  feature/rsvp-prereq-blocker-3946
@@ -381,7 +385,11 @@ serve(async (req: Request) => {
             {
               error: `You must attend the prerequisite event before registering for this event.`,
             },
+ feature/design-marketplace-4049
+ feature/design-marketplace-4049
+
  feature/membership-trial-period-4406
+ main
  HEAD
 
 
@@ -412,7 +420,11 @@ serve(async (req: Request) => {
 
 
  main
+ feature/design-marketplace-4049
+ feature/design-marketplace-4049
+
  feature/membership-trial-period-4406
+ main
  upstream/main
 
  upstream/main
