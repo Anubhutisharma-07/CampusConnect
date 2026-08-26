@@ -1443,6 +1443,7 @@ export type Database = {
           location_lat: number | null;
           location_lon: number | null;
           has_photography: boolean;
+          score_data: Json | null;
           is_high_demand: boolean;
 
           location: any;
@@ -1505,6 +1506,7 @@ export type Database = {
           location_lat?: number | null;
           location_lon?: number | null;
           has_photography?: boolean;
+          score_data?: Json | null;
           is_high_demand?: boolean;
 
           location?: any;
@@ -1566,6 +1568,7 @@ export type Database = {
           location_lat?: number | null;
           location_lon?: number | null;
           has_photography?: boolean;
+          score_data?: Json | null;
           is_high_demand?: boolean;
 
           location?: any;

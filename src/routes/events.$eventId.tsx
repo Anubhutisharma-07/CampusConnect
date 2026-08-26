@@ -21,6 +21,7 @@ import { formatEventDateRange, getGoogleCalendarUrl } from "@/lib/utils";
 import { useBannerColor } from "@/hooks/useBannerColor";
 import { MapSkeleton } from "@/components/ui/MapSkeleton";
 import { Helmet } from "react-helmet-async";
+import { LiveScoreboardOverlay } from "@/components/Scoreboard/LiveScoreboardOverlay";
 import { buildOpenGraphTags } from "@/lib/seo/eventMeta";
 const EventMap = lazy(() => import("@/components/EventMap").then((m) => ({ default: m.EventMap })));
 import { AddToCalendarDropdown } from "@/components/events/AddToCalendarDropdown";
@@ -1899,6 +1900,16 @@ export default function EventDetailsPage() {
                   {club.name}
                 </Link>
               </p>
+            )}
+
+            {/* Live Scoreboard */}
+            {(event as any).score_data && (
+              <div className="mt-8 z-10 relative">
+                <LiveScoreboardOverlay
+                  eventId={event.id}
+                  initialScoreData={(event as any).score_data}
+                />
+              </div>
             )}
 
             {!club && event.profiles && (
