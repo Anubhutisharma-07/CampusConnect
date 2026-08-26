@@ -160,7 +160,8 @@ const MentorshipDashboard = lazy(() => import("./routes/mentorship-dashboard"));
 const ReferralDashboardRoute = lazy(() => import("./pages/ReferralDashboard"));
 const ReferralLeaderboardRoute = lazy(() => import("./pages/ReferralLeaderboard"));
 const AudioTourRoute = lazy(() => import("./routes/audio-tour"));
-const PollOverlayRoute = lazy(() => import("./routes/overlay.poll.$poll_id"));// ---------------------------------------------------------------------------
+const PollOverlayRoute = lazy(() => import("./routes/overlay.poll.$poll_id"));
+const EventDiscoveryRoute = lazy(() => import("./routes/event-discovery"));// ---------------------------------------------------------------------------
 // Animated Outlet Wrapper for Framer Motion transitions with Skeleton Fallback
 // ---------------------------------------------------------------------------
 function AnimatedOutlet() {
@@ -383,6 +384,7 @@ const router = createBrowserRouter(
           <Route path="/equipment-rentals" element={<EquipmentMarketplace />} />
           <Route path="/mentorship-dashboard" element={<MentorshipDashboard />} />
           <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
+          <Route path="/events-discover" element={<EventDiscoveryRoute />} />
           {/* Catch-all route for 404 errors */}
           <Route path="*" element={<NotFound />} />
 
