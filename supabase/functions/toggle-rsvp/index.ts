@@ -267,6 +267,9 @@ serve(async (req: Request) => {
       // 1.5 Pre-flight Prerequisite Verification
       const { data: eventData, error: eventErr } = await supabase
         .from("events")
+ feature/membership-trial-period-4406
+
+
  feature/rsvp-prereq-blocker-3946
  feature/rsvp-prereq-blocker-3946
  feature/rsvp-prereq-blocker-3946
@@ -359,6 +362,7 @@ serve(async (req: Request) => {
       }
 
  main
+ main
       if (eventData?.has_photography && noMediaConsent == null) {
         return respond(
           { error: "Media consent choice is required for this photography event." },
@@ -377,6 +381,10 @@ serve(async (req: Request) => {
             {
               error: `You must attend the prerequisite event before registering for this event.`,
             },
+ feature/membership-trial-period-4406
+ HEAD
+
+
  feature/rsvp-prereq-blocker-3946
  feature/rsvp-prereq-blocker-3946
  feature/rsvp-prereq-blocker-3946
@@ -389,6 +397,7 @@ serve(async (req: Request) => {
  main
  HEAD
 
+ main
  feature/waitlist-churn-predictor
  feature/waitlist-churn-predictor
 
@@ -403,8 +412,12 @@ serve(async (req: Request) => {
 
 
  main
+ feature/membership-trial-period-4406
  upstream/main
 
+ upstream/main
+
+ main
  main
             403,
           );
