@@ -14,6 +14,7 @@ import { EventMetricRadarChart } from "@/components/analytics/EventMetricRadarCh
 import { EventPodcastPanel } from "@/components/audio/EventPodcastPanel";
 import { WaitlistChurnPredictionCard } from "@/components/events/WaitlistChurnPredictionCard";
 import { EventPollsExportSection } from "@/components/polls/EventPollsExportSection";
+import { ResourceRequestWidget } from "@/components/ResourceRequestWidget";
 import { DietaryForecastPanel } from "@/components/events/DietaryForecastPanel";
 
 import { EventAnnouncerBroadcast } from "@/components/events/EventAnnouncerBroadcast";
@@ -512,6 +513,9 @@ export default function EventDashboard() {
               )}
             </div>
           </div>
+
+          {/* Resource Request Widget */}
+          <ResourceRequestWidget eventId={eventId!} />
 
           {/* Dietary Yield Forecast & Optimizer */}
           <div className="mb-8">
