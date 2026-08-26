@@ -141,11 +141,16 @@ const AdminUsersPage = lazy(() => import("./routes/admin.users"));
 const AdminRestorePage = lazy(() => import("./routes/admin.restore"));
 const AdminDlqPage = lazy(() => import("./routes/admin.dlq"));
 const AdminEmergencyBroadcast = lazy(() => import("./routes/admin.emergency-broadcast"));
+<<<<<<< HEAD
+const AdminBadgesPage = lazy(() => import("./routes/admin.badges"));
+const NotFound = lazy(() => import("./routes/NotFound"));
+=======
 // const AdminBadgesPage = lazy(() => import("./routes/admin.badges"));
 // const NotFound = lazy(() => import("./routes/NotFound"));
 const AdminBadgesPage = lazy(() => import("./routes/admin.badges"));
 const NotFound = lazy(() => import("./routes/NotFound"));
 const EventRefundChoicePage = lazy(() => import("./routes/events.refund-choice"));
+>>>>>>> origin/main
 const ChallengeArena = lazy(() => import("./routes/challenge"));
 const EventDashboard = lazy(() => import("./routes/events.$eventId.dashboard"));
 const EventGantt = lazy(() => import("./routes/events.$eventId.gantt"));
@@ -401,6 +406,11 @@ function AnimatedOutlet() {
 
 const router = createBrowserRouter(
   createRoutesFromElements(
+<<<<<<< HEAD
+    <Route element={<Layout />} errorElement={<RouteErrorBoundary />}>
+      <Route element={<MfaChallengeGuard />}>
+        <Route element={<ComplianceCheckGuard />}>
+=======
     <>
       {/* Poll Overlay */}
       <Route path="/overlay/poll/:poll_id" element={<PollOverlayRoute />} />
@@ -410,6 +420,7 @@ const router = createBrowserRouter(
         {/* MFA Guard */}
         <Route element={<MfaChallengeGuard />}>
           {/* Animated Outlet */}
+>>>>>>> origin/main
           <Route element={<AnimatedOutlet />}>
             {/* Home */}
             <Route index element={<Index />} />
@@ -421,16 +432,23 @@ const router = createBrowserRouter(
             {/* Certificates */}
             <Route path="/certificates" element={<Certificates />} />
             <Route path="/verify" element={<VerifyCertificate />} />
+<<<<<<< HEAD
+            <Route path="/audio-tour" element={<AudioTourRoute />} />
+=======
 
             {/* Audio Tour */}
             <Route path="/audio-tour" element={<AudioTourRoute />} />
 
             {/* Clubs */}
+>>>>>>> origin/main
             <Route path="/clubs" element={<ClubsLayout />}>
               <Route index element={<ClubsIndex />} />
               <Route path="fit" element={<ClubDiscoveryQuiz />} />
               <Route path="discovery" element={<ClubDiscovery />} />
+<<<<<<< HEAD
+=======
               <Route path="audio-pitches" element={<ClubAudioPitches />} />
+>>>>>>> origin/main
               <Route path="new" element={<ClubNew />} />
 
               <Route path=":slug" element={<ClubDetails />} />
@@ -456,6 +474,11 @@ const router = createBrowserRouter(
             {/* Referrals */}
             <Route path="/referrals/dashboard" element={<ReferralDashboardRoute />} />
             <Route path="/referrals/leaderboard" element={<ReferralLeaderboardRoute />} />
+<<<<<<< HEAD
+            <Route path="/scavenger-hunts" element={<ScavengerHuntsList />} />
+            <Route path="/scavenger-hunts/:id" element={<ScavengerHuntGame />} />
+            <Route path="/explore" element={<ExploreShowcase />} />
+=======
 
             {/* Scavenger Hunts */}
             <Route path="/scavenger-hunts" element={<ScavengerHuntsList />} />
@@ -465,14 +488,19 @@ const router = createBrowserRouter(
             <Route path="/explore" element={<ExploreShowcase />} />
 
             {/* Dashboard */}
+>>>>>>> origin/main
             <Route path="/dashboard" element={<Dashboard />}>
               <Route index element={<DashboardOverview />} />
               <Route path="rsvps" element={<DashboardRsvps />} />
               <Route path="bookmarks" element={<DashboardBookmarks />} />
               <Route path="calendar" element={<DashboardCalendar />} />
             </Route>
+<<<<<<< HEAD
+            {/* Events Layout with Split-Screen desktop and Mobile Bottom Sheet */}
+=======
 
             {/* Events */}
+>>>>>>> origin/main
             <Route
               path="/events"
               element={
@@ -501,12 +529,17 @@ const router = createBrowserRouter(
             {/* Tours */}
             <Route path="/tours/manage" element={<TourManager />} />
             <Route path="/tours/:tourId" element={<TourMode />} />
+<<<<<<< HEAD
+            <Route path="challenge" element={<ChallengeArena />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
+=======
 
             {/* Challenges */}
             <Route path="/challenge" element={<ChallengeArena />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
 
             {/* Feed */}
+>>>>>>> origin/main
             <Route path="/feed" element={<Feed />} />
 
             {/* Lost & Found */}
@@ -534,16 +567,35 @@ const router = createBrowserRouter(
 
             {/* Admin */}
             <Route path="/admin/clubs/pending" element={<PendingClubsAdmin />} />
+<<<<<<< HEAD
+            <Route path="/admin/clubs/revival-requests" element={<AdminRevivalRequestsPage />} />
+            <Route path="/admin/analytics" element={<AnalyticsAdmin />} />
+            <Route path="/admin/leadership-approvals" element={<AdminLeadershipApprovals />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/messages" element={<MessagesRoute />} />
+=======
 
             <Route path="/admin/clubs/revival-requests" element={<AdminRevivalRequestsPage />} />
 
             <Route path="/admin/analytics" element={<AnalyticsAdmin />} />
 
+>>>>>>> origin/main
             <Route path="/admin/reports" element={<AdminReportsPage />} />
 
             <Route path="/admin/users" element={<AdminUsersPage />} />
 
             <Route path="/admin/restore" element={<AdminRestorePage />} />
+<<<<<<< HEAD
+            <Route path="/admin/dlq" element={<AdminDlqPage />} />
+            <Route path="/admin/emergency-broadcast" element={<AdminEmergencyBroadcast />} />
+            <Route path="/admin/badges" element={<AdminBadgesPage />} />
+            <Route path="/equipment-rentals" element={<EquipmentMarketplace />} />
+            <Route path="/mentorship-dashboard" element={<MentorshipDashboard />} />
+            <Route path="/tutors" element={<TutorsRoute />} />
+            <Route path="/carpool" element={<CarpoolRoute />} />
+            <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
+            {/* Catch-all route for 404 errors */}
+=======
 
             <Route path="/admin/dlq" element={<AdminDlqPage />} />
 
@@ -584,6 +636,7 @@ const router = createBrowserRouter(
             <Route path="/gallery" element={<GalleryPage />} />
 
             {/* 404 */}
+>>>>>>> origin/main
             <Route path="*" element={<NotFound />} />
           </Route>
 
@@ -591,7 +644,13 @@ const router = createBrowserRouter(
 
         </Route>
       </Route>
+<<<<<<< HEAD
+
+      <Route path="/gallery" element={<GalleryPage />} />
+    </Route>,
+=======
     </>,
+>>>>>>> origin/main
   ),
 );
 
@@ -726,6 +785,14 @@ export default function App() {
               */}
               <LazyMotion features={loadDomAnimation} strict={import.meta.env.DEV}>
                 <CommandPaletteProvider>
+<<<<<<< HEAD
+                  <OfflineIndicator />
+                  <EmergencyBroadcastOverlay />
+                  <LoginRecoveryModal /> {/* Floating Dark Mode Toggle */}
+                  <div className="fixed bottom-4 right-4 z-[9999]">
+                    <ThemeToggle />
+                  </div>
+=======
                   {!isPollOverlayRoute && (
                     <>
                       <OfflineIndicator />
@@ -737,6 +804,7 @@ export default function App() {
                       </div>
                     </>
                   )}
+>>>>>>> origin/main
                   <BreadcrumbProvider>
                     <MotionConfig reducedMotion="user">
                       <PushDeepLinkListener router={router} />
