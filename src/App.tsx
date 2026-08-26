@@ -160,6 +160,7 @@ const MentorshipDashboard = lazy(() => import("./routes/mentorship-dashboard"));
 const ReferralDashboardRoute = lazy(() => import("./pages/ReferralDashboard"));
 const ReferralLeaderboardRoute = lazy(() => import("./pages/ReferralLeaderboard"));
 const AudioTourRoute = lazy(() => import("./routes/audio-tour"));
+const FoodCourtTrackerRoute = lazy(() => import("./pages/FoodCourtTracker"));
 const PollOverlayRoute = lazy(() => import("./routes/overlay.poll.$poll_id"));// ---------------------------------------------------------------------------
 // Animated Outlet Wrapper for Framer Motion transitions with Skeleton Fallback
 // ---------------------------------------------------------------------------
@@ -381,7 +382,8 @@ const router = createBrowserRouter(
           <Route path="/admin/dlq" element={<AdminDlqPage />} />
           <Route path="/admin/leadership-approvals" element={<AdminLeadershipApprovals />} />
           <Route path="/equipment-rentals" element={<EquipmentMarketplace />} />
-          <Route path="/mentorship-dashboard" element={<MentorshipDashboard />} />
+          <Route path="/food-court" element={<FoodCourtTrackerRoute />} />
+            <Route path="/mentorship-dashboard" element={<MentorshipDashboard />} />
           <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
           {/* Catch-all route for 404 errors */}
           <Route path="*" element={<NotFound />} />
