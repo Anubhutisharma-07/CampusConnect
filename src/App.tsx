@@ -179,6 +179,9 @@ const CampusWellnessHub = lazy(() => import("./pages/wellness/CampusWellnessHub"
 const ReferralDashboardRoute = lazy(() => import("./pages/ReferralDashboard"));
 const ReferralLeaderboardRoute = lazy(() => import("./pages/ReferralLeaderboard"));
 const AudioTourRoute = lazy(() => import("./routes/audio-tour"));
+const PollOverlayRoute = lazy(() => import("./routes/overlay.poll.$poll_id"));
+const ShuttleTrackerRoute = lazy(() => import("./routes/shuttle-tracker"));
+// ---------------------------------------------------------------------------
 const DynamicEarlyBirdAnalyticsRoute = lazy(
   () => import("./routes/events.$id.early-bird-analytics"),
 );
@@ -582,6 +585,9 @@ const router = createBrowserRouter(
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Route>
+
+          <Route path="/shuttle" element={<ShuttleTrackerRoute />} />
+
         </Route>
       </Route>
     </>,
