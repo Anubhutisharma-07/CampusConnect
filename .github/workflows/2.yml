@@ -125,6 +125,7 @@ jobs:
 
               if (!hasAssignees || !hasECSoCLabel) {
                 let missing = [];
+                
                 if (!hasAssignees) missing.push("an assignee");
                 if (!hasECSoCLabel) missing.push("the ECSoC26 label");
                 
