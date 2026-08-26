@@ -14,6 +14,7 @@ import { EventMetricRadarChart } from "@/components/analytics/EventMetricRadarCh
 import { EventPodcastPanel } from "@/components/audio/EventPodcastPanel";
 import { WaitlistChurnPredictionCard } from "@/components/events/WaitlistChurnPredictionCard";
 import { EventPollsExportSection } from "@/components/polls/EventPollsExportSection";
+import { HardwareProvisioningPanel } from "@/components/events/HardwareProvisioningPanel";
 import { ResourceRequestWidget } from "@/components/ResourceRequestWidget";
 import { DietaryForecastPanel } from "@/components/events/DietaryForecastPanel";
 
@@ -575,6 +576,10 @@ export default function EventDashboard() {
 
           <div className="mb-8">
             <EventPollsExportSection eventId={eventId!} />
+          </div>
+
+          <div className="mb-8">
+            {event && <HardwareProvisioningPanel eventId={eventId!} clubId={event.club_id} />}
           </div>
 
           <div className="mb-8">
