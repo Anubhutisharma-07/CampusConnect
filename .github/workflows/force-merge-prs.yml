@@ -21,7 +21,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          prs=(4702 4700 4698 4696 4620 4618 4598 4594 4590 4586)
+          prs=(4702 4700 4698 4696 4620 4618 4598 4594 4590 4586 4719)
           for pr in "${prs[@]}"; do
             echo "Processing PR $pr..."
             
@@ -37,17 +37,12 @@ jobs:
               continue
             fi
             
-            # Force merge main with theirs strategy, no auto-commit
-            if ! git merge origin/main -X theirs --no-commit; then
-              echo "Merge had conflicts even with -X theirs, adding all..."
+            # Force merge main with theirs strategy
+            if ! git merge origin/main -X theirs -m "Auto merge main to resolve conflicts"; then
+              echo "Merge had conflicts even with -X theirs, committing manually..."
               git add .
+              git commit -m "Resolve all conflicts" --no-verify || true
             fi
-            
-            # Revert any changes to .github/workflows so GitHub App doesn't complain about permissions
-            git checkout HEAD -- .github/workflows || true
-            
-            # Commit the merge
-            git commit -m "Resolve all conflicts" --no-verify || true
             
             # Push resolved branch
             git push || true
