@@ -2,6 +2,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import Stripe from "https://esm.sh/stripe@14.16.0?target=deno";
 import { rateLimiter } from "../shared/rateLimiter.ts";
 import { signTicket } from "../_shared/ticket-crypto.ts";
+import { encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
+import React from "npm:react@18";
+import { Document, Page, Text, View, StyleSheet, renderToBuffer } from "npm:@react-pdf/renderer@3";
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 
 const stripeSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || Deno.env.get("WEBHOOK_SECRET") || "";
 
@@ -102,7 +107,51 @@ Deno.serve(async (req) => {
     if (stripeEvent.type === "checkout.session.completed") {
       const session = stripeEvent.data.object;
 
-      // 5a. Crowdfunding campaign donation
+      // 5a. Silent auction winner payment
+      if (session.metadata?.type === "auction_winner") {
+        const winnerId = session.metadata?.auction_winner_id;
+        const winnerUserId = session.metadata?.winner_user_id;
+        if (!winnerId || !winnerUserId) {
+          return new Response("Missing auction winner metadata", { status: 400 });
+        }
+
+        const { data: winner, error: winnerError } = await supabase
+          .from("auction_winners")
+          .select("id, winner_user_id, winning_bid, payment_status")
+          .eq("id", winnerId)
+          .maybeSingle();
+        if (
+          winnerError ||
+          !winner ||
+          winner.winner_user_id !== winnerUserId ||
+          winner.payment_status !== "pending" ||
+          (session.amount_total ?? 0) !== winner.winning_bid
+        ) {
+          console.error(`[Webhook Ingestion] Invalid auction winner payment ${winnerId}.`);
+          return new Response("Invalid auction winner payment", { status: 400 });
+        }
+
+        const { error: winnerUpdateError } = await supabase
+          .from("auction_winners")
+          .update({ payment_status: "paid" })
+          .eq("id", winnerId)
+          .eq("payment_status", "pending");
+        if (winnerUpdateError) {
+          console.error(
+            `[DB Error] Failed to mark auction winner ${winnerId} paid:`,
+            winnerUpdateError,
+          );
+          return new Response("Failed to record auction payment", { status: 500 });
+        }
+
+        console.log(`[Webhook Ingestion] Marked auction winner ${winnerId} as paid.`);
+        return new Response(JSON.stringify({ status: "success", eventId }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // 5b. Crowdfunding campaign donation
       if (session.metadata?.type === "campaign_donation") {
         const campaignId = session.metadata?.campaign_id;
         if (!campaignId) {
@@ -112,10 +161,33 @@ Deno.serve(async (req) => {
 
         const isAnonymous = session.metadata?.is_anonymous === "true";
         const amountCents = session.amount_total ?? 0;
+        const matchId = session.metadata?.match_id;
+
+        // Validate the one-time invitation before recording the payment. Checkout
+        // already performs this check, but the webhook must not trust metadata.
+        if (matchId) {
+          const { data: invitation, error: invitationError } = await supabase
+            .from("campaign_donation_matches")
+            .select("id, campaign_id, alumni_user_id, requested_amount_cents, status")
+            .eq("id", matchId)
+            .eq("status", "invited")
+            .maybeSingle();
+
+          if (
+            invitationError ||
+            !invitation ||
+            invitation.campaign_id !== campaignId ||
+            invitation.alumni_user_id !== session.metadata?.donor_id ||
+            invitation.requested_amount_cents !== amountCents
+          ) {
+            console.error(`[Webhook Ingestion] Invalid campaign donation match ${matchId}.`);
+            return new Response("Invalid campaign donation match", { status: 400 });
+          }
+        }
 
         // Insert as 'succeeded' directly — the campaign_donation_delta trigger
         // increments crowdfunding_campaigns.current_amount_cents automatically.
-        const { error: insertDonationError } = await supabase
+        const { data: donation, error: insertDonationError } = await supabase
           .from("campaign_donations")
           .insert({
             campaign_id: campaignId,
@@ -128,9 +200,11 @@ Deno.serve(async (req) => {
             stripe_payment_intent_id:
               typeof session.payment_intent === "string" ? session.payment_intent : null,
             status: "succeeded",
-          });
+          })
+          .select("id")
+          .single();
 
-        if (insertDonationError) {
+        if (insertDonationError || !donation) {
           console.error(
             `[DB Error] Failed to record donation for campaign ${campaignId}:`,
             insertDonationError,
@@ -138,9 +212,92 @@ Deno.serve(async (req) => {
           return new Response("Failed to record campaign donation", { status: 500 });
         }
 
+        if (matchId) {
+          const { error: linkError } = await supabase.rpc("link_campaign_donation_match", {
+            p_match_id: matchId,
+            p_donation_id: donation.id,
+          });
+          if (linkError) {
+            console.error(`[DB Error] Failed to link alumni match ${matchId}:`, linkError);
+          }
+        } else {
+          const { data: matches, error: matchError } = await supabase.rpc(
+            "create_campaign_donation_matches",
+            { p_donation_id: donation.id, p_pool_size: 10 },
+          );
+          if (matchError) {
+            console.error(
+              `[DB Error] Failed to create alumni matches for donation ${donation.id}:`,
+              matchError,
+            );
+          } else if (matches && matches.length > 0) {
+            const notificationPromise = supabase.functions.invoke("notify-alumni-donation-match", {
+              body: { sourceDonationId: donation.id },
+            });
+            const handleNotificationResult = async () => {
+              const { error: notificationError } = await notificationPromise;
+              if (notificationError) {
+                console.error(
+                  `[Notification Error] Failed to notify alumni for donation ${donation.id}:`,
+                  notificationError,
+                );
+              }
+            };
+
+            if (typeof EdgeRuntime !== "undefined") {
+              EdgeRuntime.waitUntil(handleNotificationResult());
+            } else {
+              await handleNotificationResult();
+            }
+          }
+        }
+
         console.log(
           `[Webhook Ingestion] Recorded $${(amountCents / 100).toFixed(2)} donation to campaign ${campaignId}.`,
         );
+
+        // Retrieve club details from campaign_id to check for tax exempt status
+        const { data: campaign, error: campaignError } = await supabase
+          .from("crowdfunding_campaigns")
+          .select("title, club_id")
+          .eq("id", campaignId)
+          .single();
+
+        if (campaignError || !campaign) {
+          console.error(`[Webhook Ingestion] Failed to fetch campaign ${campaignId}:`, campaignError);
+        } else {
+          const { data: club, error: clubError } = await supabase
+            .from("clubs")
+            .select("name, is_tax_exempt, tax_id_ein")
+            .eq("id", campaign.club_id)
+            .single();
+
+          if (clubError || !club) {
+            console.error(`[Webhook Ingestion] Failed to fetch club ${campaign.club_id}:`, clubError);
+          } else if (club.is_tax_exempt) {
+            const donorEmail = session.customer_details?.email || 
+              (session.metadata?.donor_id 
+                ? (await supabase.from("profiles").select("email").eq("id", session.metadata.donor_id).maybeSingle()).data?.email 
+                : null);
+
+            const receiptPromise = generateAndSendTaxReceipt({
+              supabase,
+              donationId: donation.id,
+              donorEmail,
+              donorName: session.customer_details?.name || session.metadata?.display_name || "Generous Donor",
+              amountCents,
+              clubName: club.name,
+              ein: club.tax_id_ein,
+              clubId: campaign.club_id,
+            });
+
+            if (typeof EdgeRuntime !== "undefined") {
+              EdgeRuntime.waitUntil(receiptPromise);
+            } else {
+              await receiptPromise;
+            }
+          }
+        }
 
         return new Response(JSON.stringify({ status: "success", eventId }), {
           status: 200,
@@ -154,14 +311,19 @@ Deno.serve(async (req) => {
       if (rsvpId) {
         const { error: updateRsvpError } = await supabase
           .from("event_rsvps")
-          .update({ status: "PAID" })
+          .update({
+            status: "PAID",
+            paid_amount_cents: session.amount_total ?? 0,
+            payment_intent_id:
+              typeof session.payment_intent === "string" ? session.payment_intent : null,
+          })
           .eq("id", rsvpId);
 
         if (updateRsvpError) {
           console.error(`[DB Error] Failed to update RSVP ${rsvpId} to PAID:`, updateRsvpError);
           return new Response("Failed to update RSVP status", { status: 500 });
         }
-        console.log(`[Webhook Ingestion] Successfully set RSVP ${rsvpId} status to PAID.`);
+        console.log(`[Webhook Ingestion] Successfully set RSVP ${rsvpId} status to PAID with payment info.`);
 
         // Decentralized Ticketing: Sign the ticket
         try {
@@ -183,14 +345,14 @@ Deno.serve(async (req) => {
                 rsvpData.ticket_id,
                 rsvpData.event_id,
                 profile.public_key,
-                rsvpData.version || 1
+                rsvpData.version || 1,
               );
 
               await supabase
                 .from("event_rsvps")
                 .update({
                   owner_public_key: profile.public_key,
-                  signature: signature
+                  signature: signature,
                 })
                 .eq("id", rsvpId);
             }
@@ -198,61 +360,119 @@ Deno.serve(async (req) => {
         } catch (cryptoErr) {
           console.error("Failed to sign ticket in webhook:", cryptoErr);
         }
-      } else if (session.metadata?.tier_id && session.metadata?.event_id && session.metadata?.user_id) {
-        // Dynamic Pricing Tiers (Issue #3293)
-        // Record the purchased ticket tier and price
-        const { error: insertRsvpError } = await supabase
-          .from("event_rsvps")
-          .insert({
-             event_id: session.metadata.event_id,
-             user_id: session.metadata.user_id,
-             status: "PAID",
-             ticket_tier_id: session.metadata.tier_id,
-             paid_amount_cents: session.amount_total ?? 0,
-             payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
-          });
+      } else if (
+        session.metadata?.tier_id &&
+        session.metadata?.event_id &&
+        session.metadata?.user_id
+      ) {
+        const { data: eventDetails } = await supabase
+          .from("events")
+          .select("title")
+          .eq("id", session.metadata.event_id)
+          .single();
+        const eventTitle = eventDetails?.title || "Upcoming Event";
 
-        if (insertRsvpError) {
-          console.error(`[DB Error] Failed to insert RSVP for dynamic tier:`, insertRsvpError);
-          return new Response("Failed to insert RSVP", { status: 500 });
+        const isGroupCheckout = session.metadata?.group_checkout === "true";
+        const allUserIds = [session.metadata.user_id];
+        const friendEmails = session.metadata?.friend_emails
+          ? session.metadata.friend_emails.split(",")
+          : [];
+        if (isGroupCheckout && session.metadata?.friend_user_ids) {
+          allUserIds.push(...session.metadata.friend_user_ids.split(","));
         }
-        console.log(`[Webhook Ingestion] Successfully recorded RSVP for tier ${session.metadata.tier_id}.`);
 
-        // Decentralized Ticketing: Sign the new ticket
-        try {
-          // Get the inserted row to get the ticket_id
-          const { data: rsvpData } = await supabase
+        for (const uid of allUserIds) {
+          const isPurchaser = uid === session.metadata.user_id;
+          const { data: rsvp, error: insertRsvpError } = await supabase
             .from("event_rsvps")
+            .insert({
+              event_id: session.metadata.event_id,
+              user_id: uid,
+              status: "PAID",
+              ticket_tier_id: session.metadata.tier_id,
+              paid_amount_cents: isPurchaser ? (session.amount_total ?? 0) : 0,
+              payment_intent_id:
+                typeof session.payment_intent === "string" ? session.payment_intent : null,
+            })
             .select("id, ticket_id, version")
-            .match({ event_id: session.metadata.event_id, user_id: session.metadata.user_id })
             .single();
 
-          if (rsvpData?.ticket_id) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("public_key")
-              .eq("id", session.metadata.user_id)
-              .single();
+          if (insertRsvpError) {
+            console.error(`[DB Error] Failed to insert RSVP for user ${uid}:`, insertRsvpError);
+            continue;
+          }
 
-            if (profile?.public_key) {
-              const signature = await signTicket(
-                rsvpData.ticket_id,
-                session.metadata.event_id,
-                profile.public_key,
-                rsvpData.version || 1
+          // Decentralized Ticketing: Sign the new ticket
+          try {
+            if (rsvp?.ticket_id) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("public_key")
+                .eq("id", uid)
+                .single();
+
+              if (profile?.public_key) {
+                const signature = await signTicket(
+                  rsvp.ticket_id,
+                  session.metadata.event_id,
+                  profile.public_key,
+                  rsvp.version || 1,
+                );
+
+                await supabase
+                  .from("event_rsvps")
+                  .update({
+                    owner_public_key: profile.public_key,
+                    signature: signature,
+                  })
+                  .eq("id", rsvp.id);
+              }
+            }
+          } catch (cryptoErr) {
+            console.error(`Failed to sign ticket for user ${uid}:`, cryptoErr);
+          }
+
+          // Transactional email notification for ticket distribution
+          const recipientEmail = isPurchaser
+            ? session.customer_details?.email || ""
+            : friendEmails[allUserIds.indexOf(uid) - 1] || "";
+
+          if (recipientEmail) {
+            const emailBody = {
+              from: "CampusConnect <notifications@campusconnect.app>",
+              to: [recipientEmail],
+              subject: `Your Ticket for ${eventTitle}! 🎟️`,
+              html: `
+                <h2>Ticket Confirmation: ${eventTitle}</h2>
+                <p>Hi there,</p>
+                <p>You have been registered for <strong>${eventTitle}</strong>.</p>
+                <p>Here is your digital ticket ID: <strong>${rsvp?.ticket_id}</strong></p>
+                <p>Show this ticket ID or your user profile QR code at the door for entry.</p>
+                <p>Enjoy the event!</p>
+              `,
+            };
+
+            const resendApiKey = Deno.env.get("RESEND_API_KEY");
+            const mockEmail = Deno.env.get("MOCK_EMAIL") === "true";
+
+            if (!resendApiKey || mockEmail) {
+              console.log(
+                `[Email Mock] Ticket sent to ${recipientEmail} with ticket ID: ${rsvp?.ticket_id}`,
               );
-
-              await supabase
-                .from("event_rsvps")
-                .update({
-                  owner_public_key: profile.public_key,
-                  signature: signature
-                })
-                .eq("id", rsvpData.id);
+            } else {
+              const emailRes = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${resendApiKey}`,
+                },
+                body: JSON.stringify(emailBody),
+              });
+              if (!emailRes.ok) {
+                console.error("Failed to send ticket email via Resend:", await emailRes.text());
+              }
             }
           }
-        } catch (cryptoErr) {
-          console.error("Failed to sign dynamically priced ticket in webhook:", cryptoErr);
         }
       } else {
         console.warn("[Webhook Ingestion] Missing rsvp_id or tier_id metadata parameter.");
@@ -369,3 +589,243 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+const styles = StyleSheet.create({
+  page: { padding: 50, fontFamily: "Helvetica", fontSize: 11, color: "#1a1a1a" },
+  header: { borderBottomWidth: 2, borderBottomColor: "#4f46e5", paddingBottom: 10, marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: "bold", color: "#4f46e5", textTransform: "uppercase" },
+  section: { marginBottom: 15 },
+  label: { fontWeight: "bold", fontSize: 10, color: "#666", textTransform: "uppercase" },
+  value: { fontSize: 13, marginBottom: 5 },
+  divider: { borderBottomWidth: 1, borderBottomColor: "#e5e7eb", marginVertical: 15 },
+  legalText: { fontSize: 10, color: "#4b5563", fontStyle: "italic", marginTop: 20 },
+  thankYou: { fontSize: 14, fontWeight: "bold", color: "#111827", marginTop: 15 }
+});
+
+const ReceiptDocument = ({ date, amount, donorName, clubName, ein }: any) => {
+  return React.createElement(
+    Document,
+    null,
+    React.createElement(
+      Page,
+      { size: "A4", style: styles.page },
+      React.createElement(
+        View,
+        { style: styles.header },
+        React.createElement(Text, { style: styles.title }, "Donation Receipt")
+      ),
+      React.createElement(
+        View,
+        { style: styles.section },
+        React.createElement(Text, { style: styles.label }, "Date of Donation"),
+        React.createElement(Text, { style: styles.value }, date)
+      ),
+      React.createElement(
+        View,
+        { style: styles.section },
+        React.createElement(Text, { style: styles.label }, "Donor Name"),
+        React.createElement(Text, { style: styles.value }, donorName)
+      ),
+      React.createElement(
+        View,
+        { style: styles.section },
+        React.createElement(Text, { style: styles.label }, "Receiving Organization"),
+        React.createElement(Text, { style: styles.value }, clubName),
+        ein ? React.createElement(Text, { style: styles.value }, `EIN: ${ein}`) : null
+      ),
+      React.createElement(
+        View,
+        { style: styles.section },
+        React.createElement(Text, { style: styles.label }, "Contribution Amount"),
+        React.createElement(Text, { style: styles.value }, `$${(amount / 100).toFixed(2)}`)
+      ),
+      React.createElement(View, { style: styles.divider }),
+      React.createElement(
+        Text,
+        { style: styles.thankYou },
+        "Thank you for your generous support!"
+      ),
+      React.createElement(
+        Text,
+        { style: styles.legalText },
+        "No goods or services were provided in exchange for this contribution. Your contribution is tax-deductible to the extent allowed by law. Please retain this receipt for your IRS records."
+      )
+    )
+  );
+};
+
+async function generateAndSendTaxReceipt({
+  supabase,
+  donationId,
+  donorEmail,
+  donorName,
+  amountCents,
+  clubName,
+  ein,
+  clubId,
+}: {
+  supabase: any;
+  donationId: string;
+  donorEmail: string | null;
+  donorName: string;
+  amountCents: number;
+  clubName: string;
+  ein: string | null;
+  clubId: string;
+}) {
+  try {
+    console.log(`[Receipt Generation] Creating tax receipt for donation ${donationId}...`);
+    
+    // 1. Generate PDF using @react-pdf/renderer
+    const dateStr = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const element = React.createElement(ReceiptDocument, {
+      date: dateStr,
+      amount: amountCents,
+      donorName,
+      clubName,
+      ein,
+    });
+
+    const pdfBuffer = await renderToBuffer(element);
+    console.log(`[Receipt Generation] PDF generated successfully. Size: ${pdfBuffer.length} bytes`);
+
+    // 2. Upload to Supabase Storage in 'club_vaults' bucket
+    const fileName = `tax_receipt_${donationId}.pdf`;
+    const filePath = `${clubId}/Financials/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("club_vaults")
+      .upload(filePath, pdfBuffer, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`Failed to upload receipt to storage: ${uploadError.message}`);
+    }
+    console.log(`[Receipt Generation] PDF uploaded to storage at: ${filePath}`);
+
+    // 3. Find executive/uploader to register upload in vault_documents
+    const { data: member } = await supabase
+      .from("club_members")
+      .select("user_id")
+      .eq("club_id", clubId)
+      .order("role", { ascending: false }) // president/treasurer first
+      .limit(1)
+      .maybeSingle();
+
+    const uploaderId = member?.user_id || "00000000-0000-0000-0000-000000000000";
+
+    const { error: dbError } = await supabase
+      .from("vault_documents")
+      .insert({
+        club_id: clubId,
+        file_name: fileName,
+        file_path: filePath,
+        file_size: pdfBuffer.length,
+        mime_type: "application/pdf",
+        category: "Financials",
+        uploaded_by: uploaderId,
+      });
+
+    if (dbError) {
+      throw new Error(`Failed to record receipt in vault_documents: ${dbError.message}`);
+    }
+
+    // Write audit log entry
+    await supabase.from("vault_audit_log").insert({
+      club_id: clubId,
+      user_id: uploaderId,
+      action: "UPLOAD",
+      file_name: fileName,
+    });
+    console.log(`[Receipt Generation] Receipt recorded in vault_documents`);
+
+    // 4. Email the receipt to the donor
+    if (donorEmail) {
+      const emailProvider = Deno.env.get("EMAIL_PROVIDER") || "sendgrid";
+      const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      const base64Content = encode(pdfBuffer);
+
+      const subject = `Donation Receipt - ${clubName}`;
+      const htmlBody = `
+        <p>Dear ${donorName},</p>
+        <p>Thank you so much for your donation of $${(amountCents / 100).toFixed(2)} to <strong>${clubName}</strong>.</p>
+        <p>Your official tax-exempt donation receipt is attached to this email.</p>
+        <p>Best regards,<br/>${clubName} Team</p>
+      `;
+
+      if (emailProvider === "resend" && resendApiKey) {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: "CampusConnect <welcome@campusconnect.app>",
+            to: [donorEmail],
+            subject: subject,
+            html: htmlBody,
+            attachments: [
+              {
+                filename: fileName,
+                content: base64Content,
+              },
+            ],
+          }),
+        });
+
+        if (!res.ok) {
+          const resData = await res.text();
+          console.error(`[Receipt Generation] Resend API Error:`, resData);
+        } else {
+          console.log(`[Receipt Generation] Receipt emailed via Resend to ${donorEmail}`);
+        }
+      } else if (emailProvider === "sendgrid" && sendgridApiKey) {
+        const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sendgridApiKey}`,
+          },
+          body: JSON.stringify({
+            personalizations: [
+              {
+                to: [{ email: donorEmail, name: donorName }],
+              },
+            ],
+            from: { email: "welcome@campusconnect.app", name: "CampusConnect" },
+            subject: subject,
+            content: [{ type: "text/html", value: htmlBody }],
+            attachments: [
+              {
+                content: base64Content,
+                type: "application/pdf",
+                filename: fileName,
+                disposition: "attachment",
+              },
+            ],
+          }),
+        });
+
+        if (!res.ok) {
+          const resData = await res.text();
+          console.error(`[Receipt Generation] SendGrid API Error:`, resData);
+        } else {
+          console.log(`[Receipt Generation] Receipt emailed via SendGrid to ${donorEmail}`);
+        }
+      } else {
+        console.log(`[Receipt Generation] [Mock Mode] Would send tax receipt to ${donorEmail} with attached PDF`);
+      }
+    }
+  } catch (error: any) {
+    console.error(`[Receipt Generation] Error generating or sending tax receipt for donation ${donationId}:`, error);
+  }
+}
