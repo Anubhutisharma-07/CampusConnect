@@ -267,8 +267,13 @@ serve(async (req: Request) => {
       // 1.5 Pre-flight Prerequisite Verification
       const { data: eventData, error: eventErr } = await supabase
         .from("events")
+ feature/double-booking-penalty-4045
+ feature/double-booking-penalty-4045
+ feature/double-booking-penalty-4045
+
  feature/design-marketplace-4049
  /design-marketplace-4049
+ main
 
  feature/membership-trial-period-4406
  main
@@ -385,8 +390,13 @@ serve(async (req: Request) => {
             {
               error: `You must attend the prerequisite event before registering for this event.`,
             },
+ feature/double-booking-penalty-4045
+ feature/double-booking-penalty-4045
+ feature/double-booking-penalty-4045
+
  feature/design-marketplace-4049
  feature/design-marketplace-4049
+ main
 
  feature/membership-trial-period-4406
  main
@@ -420,8 +430,13 @@ serve(async (req: Request) => {
 
 
  main
+ feature/double-booking-penalty-4045
+ feature/double-booking-penalty-4045
+ feature/double-booking-penalty-4045
+
  feature/design-marketplace-4049
  feature/design-marketplace-4049
+ main
 
  feature/membership-trial-period-4406
  main
