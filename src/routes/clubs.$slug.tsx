@@ -810,9 +810,33 @@ export default function ClubProfile() {
             <CrowdfundingCampaignSection clubId={club.id} />
           </div>
         </section>
+ feature/election-coi-detector-3952
+ feature/election-coi-detector-3952
+ feature/election-coi-detector-3952
+ feature/election-coi-detector-3952
+ feature/election-coi-detector-3952
+ feature/election-coi-detector-3952
+ feature/election-coi-detector-3952
+ feature/election-coi-detector-3952
+
+ feature/rsvp-prereq-blocker-3946
+ feature/rsvp-prereq-blocker-3946
+ feature/rsvp-prereq-blocker-3946
+ main
+
+ feature/geofenced-checkin-4035
+ feature/geofenced-checkin-4035
+ main
+
+ feature/assistant-persistence-2044
+ main
+
+
+
  feature/double-booking-penalty-4045
  feature/double-booking-penalty-4045
  feature/double-booking-penalty-4045
+ main
 
  feature/membership-trial-period-4406
 
@@ -826,6 +850,7 @@ export default function ClubProfile() {
         feature/rsvp-prereq-blocker-3946 feature/rsvp-prereq-blocker-3946
         feature/rsvp-prereq-blocker-3946 feature/geofenced-checkin-4035
         feature/geofenced-checkin-4035 main feature/assistant-persistence-2044 main
+ main
         <section className="px-4 py-6 md:px-6">
           <div className="mx-auto max-w-6xl">
             <ClubKnowledgeBaseSection clubId={club.id} />
