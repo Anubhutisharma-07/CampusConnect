@@ -340,6 +340,7 @@ function AnimatedOutlet() {
 //                 <Route path="/admin/emergency-broadcast" element={<AdminEmergencyBroadcast />} />
 //                 <Route path="/admin/badges" element={<AdminBadgesPage />} />
 //                 <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
+                  <Route path="/events/:eventId/reviews" element={<EventFeedbackPage />} />
 //                 <Route path="*" element={<NotFound />} />
 //               </Route>
 //             </Route>
