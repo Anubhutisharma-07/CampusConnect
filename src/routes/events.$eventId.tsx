@@ -97,6 +97,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { SeatingCanvas } from "@/components/events/SeatingCanvas";
 import { SponsorManager } from "@/components/events/SponsorManager";
 import { EventGuestList } from "@/components/events/EventGuestList";
+import { SongRequestSection } from "@/components/events/SongRequestSection";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { OptimizedImage } from "@/components/media/OptimizedImage";
@@ -2475,6 +2476,11 @@ export default function EventDetailsPage() {
             {/* Live Q&A */}
             <div className="mt-8">
               <LiveQA eventId={eventId} userId={user?.id} isOrganizer={isOrganizer} />
+            </div>
+
+            {/* Collaborative Event Soundtrack */}
+            <div className="mt-8">
+              <SongRequestSection eventId={eventId} isOrganizer={isOrganizer} />
             </div>
 
             {/* Transportation / Carpool Matching (Issue #2877) */}
