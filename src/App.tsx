@@ -177,6 +177,7 @@ const BundleDetailsRoute = lazy(() => import("./pages/BundleDetailsPage"));
 const EquipmentMarketplace = lazy(() => import("./routes/equipment"));
 const MentorshipDashboard = lazy(() => import("./routes/mentorship-dashboard"));
 const EventFeedbackAnalytics = lazy(() => import("./pages/EventFeedbackAnalytics"));
+const CampusShuttleTracker = lazy(() => import("./pages/CampusShuttleTracker"));
 const Wrapped2026 = lazy(() => import("./routes/wrapped.2026"));
 const SkillSwapMarketplace = lazy(() => import("./routes/skill-swap"));
 const CampusWellnessHub = lazy(() => import("./pages/wellness/CampusWellnessHub"));
@@ -597,6 +598,9 @@ const router = createBrowserRouter(
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Route>
+              {/* Campus Shuttle Tracker */}
+              <Route path="/shuttle-tracker" element={<CampusShuttleTracker />} />
+
 
             <Route path="/shuttle" element={<ShuttleTrackerRoute />} />
           </Route>
