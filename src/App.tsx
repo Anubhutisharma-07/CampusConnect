@@ -175,6 +175,8 @@ const TourMode = lazy(() => import("./routes/tours.$tourId"));
 const BundleCheckoutRoute = lazy(() => import("./pages/BundleCheckoutPage"));
 const BundleDetailsRoute = lazy(() => import("./pages/BundleDetailsPage"));
 const EquipmentMarketplace = lazy(() => import("./routes/equipment"));
+const MentorshipDashboard = lazy(() => import("./routes/mentorship-dashboard"));
+const EventFeedbackAnalytics = lazy(() => import("./pages/EventFeedbackAnalytics"));
 const Wrapped2026 = lazy(() => import("./routes/wrapped.2026"));
 const SkillSwapMarketplace = lazy(() => import("./routes/skill-swap"));
 const CampusWellnessHub = lazy(() => import("./pages/wellness/CampusWellnessHub"));
@@ -588,6 +590,9 @@ const router = createBrowserRouter(
 
               {/* Gallery */}
               <Route path="/gallery" element={<GalleryPage />} />
+
+              {/* Event Feedback Analytics */}
+              <Route path="/event-feedback" element={<EventFeedbackAnalytics />} />
 
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
