@@ -148,6 +148,7 @@ import { Blurhash } from "react-blurhash";
 import { isValidBlurhash, DEFAULT_FALLBACK_BLURHASH } from "@/lib/blurhashUtils";
 import { EventDescriptionTranslation } from "@/components/events/EventDescriptionTranslation";
 import { useDeviceFingerprint } from "@/hooks/useDeviceFingerprint";
+import { WaitlistBiddingLeaderboard } from "@/components/events/WaitlistBiddingLeaderboard";
 
 /**
  * Hero banner for the event detail page.
@@ -689,7 +690,7 @@ export default function EventDetailsPage() {
           venues (
             name, building, capacity, accessibility_features, latitude, longitude, geofence_radius_meters
           ),
-          id, title, description, event_date, start_date, end_date, location, banner_url, created_by, is_high_risk, is_high_demand, status, short_id, max_attendees, requires_approval, category_id, tags, version, version_vector, blurhash, latitude, longitude, geofencing_enabled, geofence_radius_meters, accommodation_deadline, dress_code, base_price, surge_multiplier,
+          id, title, description, event_date, start_date, end_date, location, banner_url, created_by, is_high_risk, is_high_demand, status, short_id, max_attendees, requires_approval, category_id, tags, version, version_vector, blurhash, latitude, longitude, geofencing_enabled, geofence_radius_meters, accommodation_deadline, dress_code, base_price, surge_multiplier, is_bidding_enabled,
           profiles (full_name, email),
           event_metrics (views)
         `,
@@ -2080,87 +2081,98 @@ export default function EventDetailsPage() {
                         : "Join Waitlist"}
                   </Button>
                   {isOnWaitlist && (
-                    <div className="mt-4 flex flex-col items-center gap-2 rounded bg-amber-50 p-4 border-2 border-amber-300">
-                      <p className="font-mono text-sm font-bold text-amber-900">
-                        Priority Score: {waitlistScore?.total_score || "..."}
-                      </p>
-                      <p className="text-center text-xs text-amber-800/80 max-w-xs leading-relaxed">
-                        Your position is determined by:
-                        <br />
-                        • Time on waitlist
-                        <br />
-                        • Club membership
-                        <br />
-                        • Attendance streak
-                        <br />• Graduation status
-                      </p>
+                    <>
+                      <div className="mt-4 flex flex-col items-center gap-2 rounded bg-amber-50 p-4 border-2 border-amber-300">
+                        <p className="font-mono text-sm font-bold text-amber-900">
+                          Priority Score: {waitlistScore?.total_score || "..."}
+                        </p>
+                        <p className="text-center text-xs text-amber-800/80 max-w-xs leading-relaxed">
+                          Your position is determined by:
+                          <br />
+                          • Time on waitlist
+                          <br />
+                          • Club membership
+                          <br />
+                          • Attendance streak
+                          <br />• Graduation status
+                        </p>
 
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2 text-xs border-amber-400 text-amber-900 hover:bg-amber-100 font-bold tracking-tight"
-                          >
-                            View Score Breakdown
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md border-4 border-black shadow-[8px_8px_0_0_#000]">
-                          <DialogHeader>
-                            <DialogTitle className="font-display uppercase text-2xl tracking-tight text-black">
-                              Priority Score Breakdown
-                            </DialogTitle>
-                            <DialogDescription className="font-mono text-gray-600">
-                              How your waitlist priority is calculated.
-                            </DialogDescription>
-                          </DialogHeader>
-                          {waitlistScore ? (
-                            <div className="flex flex-col gap-3 font-mono text-sm my-4 text-black">
-                              <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
-                                <span>Time on waitlist ({waitlistScore.waitlist_hours}h)</span>
-                                <span className="font-bold text-blue-600">
-                                  +{waitlistScore.time_score}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
-                                <span>Active club member</span>
-                                <span className="font-bold text-lime-600">
-                                  +{waitlistScore.membership_score}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
-                                <span>Attendance streak</span>
-                                <span className="font-bold text-orange-600">
-                                  +{waitlistScore.streak_score}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center border-b-2 border-black pb-2">
-                                <span>Graduating senior</span>
-                                <span className="font-bold text-purple-600">
-                                  +{waitlistScore.senior_score}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center pt-2 text-lg font-black uppercase">
-                                <span>Total Score</span>
-                                <span>{waitlistScore.total_score}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="p-4 text-center font-mono text-gray-500">
-                              Loading score...
-                            </div>
-                          )}
-                          <DialogFooter className="sm:justify-start">
+                        <Dialog>
+                          <DialogTrigger asChild>
                             <Button
                               variant="outline"
-                              className="w-full font-bold uppercase border-2 border-black shadow-[4px_4px_0_0_#000]"
+                              size="sm"
+                              className="mt-2 text-xs border-amber-400 text-amber-900 hover:bg-amber-100 font-bold tracking-tight"
                             >
-                              Close
+                              View Score Breakdown
                             </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md border-4 border-black shadow-[8px_8px_0_0_#000]">
+                            <DialogHeader>
+                              <DialogTitle className="font-display uppercase text-2xl tracking-tight text-black">
+                                Priority Score Breakdown
+                              </DialogTitle>
+                              <DialogDescription className="font-mono text-gray-600">
+                                How your waitlist priority is calculated.
+                              </DialogDescription>
+                            </DialogHeader>
+                            {waitlistScore ? (
+                              <div className="flex flex-col gap-3 font-mono text-sm my-4 text-black">
+                                <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
+                                  <span>Time on waitlist ({waitlistScore.waitlist_hours}h)</span>
+                                  <span className="font-bold text-blue-600">
+                                    +{waitlistScore.time_score}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
+                                  <span>Active club member</span>
+                                  <span className="font-bold text-lime-600">
+                                    +{waitlistScore.membership_score}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
+                                  <span>Attendance streak</span>
+                                  <span className="font-bold text-orange-600">
+                                    +{waitlistScore.streak_score}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center border-b-2 border-black pb-2">
+                                  <span>Graduating senior</span>
+                                  <span className="font-bold text-purple-600">
+                                    +{waitlistScore.senior_score}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 text-lg font-black uppercase">
+                                  <span>Total Score</span>
+                                  <span>{waitlistScore.total_score}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-4 text-center font-mono text-gray-500">
+                                Loading score...
+                              </div>
+                            )}
+                            <DialogFooter className="sm:justify-start">
+                              <Button
+                                variant="outline"
+                                className="w-full font-bold uppercase border-2 border-black shadow-[4px_4px_0_0_#000]"
+                              >
+                                Close
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      {/* Issue #4257: Waitlist Bidding Leaderboard */}
+                      {(event as any)?.is_bidding_enabled && (
+                        <div className="mt-4 w-full">
+                          <WaitlistBiddingLeaderboard
+                            eventId={eventId}
+                            userRsvpId={myRsvp?.status === "waitlisted" ? myRsvp.id : null}
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ) : hasTiersOrSurge ? null : (
