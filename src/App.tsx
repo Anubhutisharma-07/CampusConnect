@@ -158,6 +158,7 @@ const BundleDetailsRoute = lazy(() => import("./pages/BundleDetailsPage"));
 const EquipmentMarketplace = lazy(() => import("./routes/equipment"));
 const MentorshipDashboard = lazy(() => import("./routes/mentorship-dashboard"));
 const EventFeedbackAnalytics = lazy(() => import("./pages/EventFeedbackAnalytics"));
+const CampusShuttleTracker = lazy(() => import("./pages/CampusShuttleTracker"));
 const ReferralDashboardRoute = lazy(() => import("./pages/ReferralDashboard"));
 const ReferralLeaderboardRoute = lazy(() => import("./pages/ReferralLeaderboard"));
 const AudioTourRoute = lazy(() => import("./routes/audio-tour"));
@@ -384,6 +385,7 @@ const router = createBrowserRouter(
           <Route path="/equipment-rentals" element={<EquipmentMarketplace />} />
           <Route path="/mentorship-dashboard" element={<MentorshipDashboard />} />
           <Route path="/event-feedback" element={<EventFeedbackAnalytics />} />
+          <Route path="/shuttle-tracker" element={<CampusShuttleTracker />} />
           <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
           {/* Catch-all route for 404 errors */}
           <Route path="*" element={<NotFound />} />
