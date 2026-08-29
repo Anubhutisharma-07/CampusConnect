@@ -35,7 +35,6 @@ import { ComplianceCheckGuard } from "@/components/auth/ComplianceCheckGuard";
 import { ShadowbanEvasionCheck } from "@/components/Auth/ShadowbanEvasionCheck";
 import UnsubscribeRoute from "./routes/unsubscribe";
 import PollOverlayRoute from "./routes/overlay.poll.$poll_id";
-
 // --- NEW GEOFENCE IMPORTS ---
 import { useLocationTracker } from "./hooks/useLocationTracker";
 import { EmergencyTakeover } from "./components/EmergencyTakeover";
@@ -197,6 +196,9 @@ const SkillSwapMarketplace = lazy(() => import("./routes/skill-swap"));
 const CampusWellnessHub = lazy(() => import("./pages/wellness/CampusWellnessHub"));
 const ReferralDashboardRoute = lazy(() => import("./pages/ReferralDashboard"));
 const ReferralLeaderboardRoute = lazy(() => import("./pages/ReferralLeaderboard"));
+const StudyGroupsRoute = lazy(() => import("./routes/study-groups"));
+const StudyGroupsAnalyticsRoute = lazy(() => import("./routes/study-groups.analytics"));
+const ExamTrackerRoute = lazy(() => import("./routes/exam-tracker"));
 const AudioTourRoute = lazy(() => import("./routes/audio-tour"));
 const ShuttleTrackerRoute = lazy(() => import("./routes/shuttle-tracker"));
 // ---------------------------------------------------------------------------
@@ -628,8 +630,6 @@ const router = createBrowserRouter(
             <Route path="/parking" element={<CampusParkingSpotFinder />} />
             {/* Library Book Finder */}
             <Route path="/library" element={<LibraryBookFinder />} />
-
-            <Route path="/shuttle" element={<ShuttleTrackerRoute />} />
           </Route>
         </Route>
       </Route>
