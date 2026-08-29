@@ -22,6 +22,7 @@ import { EventAnnouncerBroadcast } from "@/components/events/EventAnnouncerBroad
 import { EventFeedbackLlmSummaryCard } from "@/components/events/EventFeedbackLlmSummaryCard";
 import { EventWeatherWarningBanner } from "@/components/events/EventWeatherWarningBanner";
 import { ManageTicketTiers } from "@/components/events/ManageTicketTiers";
+import { VIPSeatingDashboard } from "@/components/events/VIPSeatingDashboard";
 import { FlashSaleTriggerRules } from "@/components/events/FlashSaleTriggerRules";
 import { OrganizerNoiseBroadcaster } from "@/components/events/OrganizerNoiseBroadcaster";
 import { VendorRfpManager } from "@/components/vendors/VendorRfpManager";
@@ -610,6 +611,7 @@ export default function EventDashboard() {
           </div>
 
           <div className="mb-8">
+            {event && <HardwareProvisioningPanel eventId={eventId!} clubId={event.club_id} />}
             {eventData && (
               <HardwareProvisioningPanel eventId={eventId!} clubId={eventData.club_id} />
             )}
@@ -736,6 +738,7 @@ export default function EventDashboard() {
           </div>
 
           <div className="mb-8">
+            <VIPSeatingDashboard eventId={eventId!} />
             <FlashSaleTriggerRules eventId={eventId!} />
           </div>
 
