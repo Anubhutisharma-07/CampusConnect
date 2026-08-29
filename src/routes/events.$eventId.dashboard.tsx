@@ -32,7 +32,6 @@ import { dispatchPhotoChaserToTaskSystem } from "@/services/missingPhotoTaskRbac
 import { EventLayoutHeatmapAnalyzer } from "@/components/events/EventLayoutHeatmapAnalyzer";
 import { EarlyBirdSecretUrlManager } from "@/components/events/EarlyBirdSecretUrlManager";
 
-
 const EChartsWrapper = lazy(() => import("@/components/analytics/EChartsWrapper"));
 
 export default function EventDashboard() {
@@ -107,7 +106,7 @@ export default function EventDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("title, is_public_showcase, cover_image_url")
+        .select("title, is_public_showcase, club_id, cover_image_url")
         .eq("id", eventId!)
         .single();
       if (error) throw error;
@@ -443,7 +442,7 @@ export default function EventDashboard() {
                   task={dispatchPhotoChaserToTaskSystem(
                     eventId!,
                     eventData?.title || "Campus Event",
-                    ["media_lead", "marketing_chair", "event_organizer"]
+                    ["media_lead", "marketing_chair", "event_organizer"],
                   )}
                   userRole="event_organizer"
                   userId="org-1"
@@ -460,9 +459,7 @@ export default function EventDashboard() {
               />
             </div>
 
-
             <div className="flex flex-wrap gap-3 items-center mt-4 sm:mt-0">
-
               {/* Public Showcase Toggle */}
               <label className="flex items-center gap-2 font-mono text-xs font-bold uppercase cursor-pointer select-none bg-blue-50 dark:bg-blue-950/20 border-2 border-black dark:border-white p-2 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors">
                 <input
@@ -613,7 +610,9 @@ export default function EventDashboard() {
           </div>
 
           <div className="mb-8">
-            {event && <HardwareProvisioningPanel eventId={eventId!} clubId={event.club_id} />}
+            {eventData && (
+              <HardwareProvisioningPanel eventId={eventId!} clubId={eventData.club_id} />
+            )}
           </div>
 
           <div className="mb-8">
@@ -689,11 +688,6 @@ export default function EventDashboard() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Area Chart Card */}
             <div className="neu-border bg-white p-4 transition-transform hover:-translate-y-1">
-              <ReactECharts
-                option={areaChartOption}
-                style={{ height: "400px", width: "100%" }}
-                opts={{ renderer: "svg" }}
-              />
               <Suspense fallback={<ChartSkeleton height="400px" />}>
                 <EChartsWrapper
                   option={areaChartOption}
@@ -727,11 +721,6 @@ export default function EventDashboard() {
                   Year
                 </button>
               </div>
-              <ReactECharts
-                option={pieChartOption}
-                style={{ height: "350px", width: "100%" }}
-                opts={{ renderer: "svg" }}
-              />
               <Suspense fallback={<ChartSkeleton height="350px" />}>
                 <EChartsWrapper
                   option={pieChartOption}
