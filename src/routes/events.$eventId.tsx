@@ -31,7 +31,7 @@ import { LiveCapacityMeter } from "@/components/events/LiveCapacityMeter";
 import { TicketPricingTimeline } from "@/components/events/TicketPricingTimeline";
 import { FlashSaleBanner } from "@/components/events/FlashSaleBanner";
 import { FlashSaleControl } from "@/components/events/FlashSaleControl";
-import { FlashSaleTriggerRules } from "@/components/events/FlashSaleTriggerRules";
+import { DutchAuctionPanel } from "@/components/events/DutchAuctionPanel";
 import { formatDateLong } from "@/lib/dateFormatter";
 import { getRsvpIdempotencyKey, clearRsvpIdempotencyKey } from "@/lib/rsvpIdempotency";
 import { toast } from "sonner";
@@ -1978,10 +1978,8 @@ export default function EventDetailsPage() {
               />
             </div>
 
-            <div className="mt-4 max-w-md">
-              <LiveCapacityMeter eventId={event.id} />
-            </div>
-            <div id="ticket-pricing-section" className="mt-6 max-w-2xl">
+            <div id="ticket-pricing-section" className="mt-6 max-w-2xl space-y-4">
+              <DutchAuctionPanel eventId={event.id} />
               <FlashSaleBanner eventId={event.id} />
               <TicketPricingTimeline eventId={event.id} isOrganizer={isOrganizer} />
               {isOrganizer && (
