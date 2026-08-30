@@ -696,7 +696,7 @@ export default function EventDetailsPage() {
           venues (
             name, building, capacity, accessibility_features, latitude, longitude, geofence_radius_meters
           ),
-          id, title, description, event_date, start_date, end_date, location, banner_url, created_by, is_high_risk, is_high_demand, status, short_id, max_attendees, requires_approval, category_id, tags, version, version_vector, blurhash, latitude, longitude, geofencing_enabled, geofence_radius_meters, accommodation_deadline, dress_code, base_price, surge_multiplier, is_bidding_enabled,
+          id, title, description, event_date, start_date, end_date, location, banner_url, created_by, is_high_risk, is_high_demand, status, short_id, max_attendees, requires_approval, category_id, tags, version, version_vector, blurhash, latitude, longitude, geofencing_enabled, geofence_radius_meters, accommodation_deadline, dress_code, base_price, surge_multiplier, is_bidding_enabled, audio_description_url, audio_description_enabled,
           profiles (full_name, email),
           event_metrics (views)
         `,
