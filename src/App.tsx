@@ -162,6 +162,7 @@ const ReferralLeaderboardRoute = lazy(() => import("./pages/ReferralLeaderboard"
 const AudioTourRoute = lazy(() => import("./routes/audio-tour"));
 const PollOverlayRoute = lazy(() => import("./routes/overlay.poll.$poll_id"));// ---------------------------------------------------------------------------
 // Animated Outlet Wrapper for Framer Motion transitions with Skeleton Fallback
+const AttendanceTrackerRoute = lazy(() => import("./pages/CampusAttendanceTracker"));
 // ---------------------------------------------------------------------------
 function AnimatedOutlet() {
   const location = useLocation();
@@ -338,6 +339,7 @@ const router = createBrowserRouter(
             <Route path="/admin/restore" element={<AdminRestorePage />} />
 <Route path="/admin/dlq" element={<AdminDlqPage />} />
 <Route path="/admin/emergency-broadcast" element={<AdminEmergencyBroadcast />} />            <Route path="/admin/badges" element={<AdminBadgesPage />} />            <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
+          <Route path="/attendance" element={<AttendanceTrackerRoute />} />
             <Route path="/admin/badges" element={<AdminBadgesPage />} />            <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
             {/* Catch-all route for 404 errors */}
             <Route path="*" element={<NotFound />} />
