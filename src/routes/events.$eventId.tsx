@@ -17,6 +17,8 @@ import { AslAvatarPip } from "@/components/events/AslAvatarPip";
 import { AudioDescriptionSyncWidget } from "@/components/events/AudioDescriptionSyncWidget";
 import { EscrowDonationWidget } from "@/components/events/EscrowDonationWidget";
 import { SkillMatcherWidget } from "@/components/events/SkillMatcherWidget";
+import { OfacCompliancePanel } from "@/components/events/OfacCompliancePanel";
+import { HoneyPotTrapWidget } from "@/components/events/HoneyPotTrapWidget";
 import { SkeletonEventDetails } from "@/components/events/SkeletonEventDetails";
 import { EventSeatingManager } from "@/components/events/EventSeatingManager";
 import { SilentAuctionSection } from "@/components/events/SilentAuctionSection";
@@ -3725,6 +3727,8 @@ export default function EventDetailsPage() {
           sponsorId={event?.created_by || ""}
           companyName={event?.clubs?.name || ""}
         />
+        <OfacCompliancePanel />
+        <HoneyPotTrapWidget />
         <AslAvatarPip eventId={eventId || ""} />
       </SiteShell>
     </>
