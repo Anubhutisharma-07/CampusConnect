@@ -162,6 +162,10 @@ const EventGantt = lazy(() => import("./routes/events.$eventId.gantt"));
 const EventFloorplan = lazy(() => import("./routes/events.$eventId.floorplan"));
 const EventZoneCheckIn = lazy(() => import("./routes/events.$eventId.zones.$zoneId.check-in"));
 const LostFound = lazy(() => import("./routes/lost-found"));
+const LibraryBookFinder = lazy(() => import("./pages/LibraryBookFinder"));
+const Leaderboard = lazy(() =>
+  import("./components/Leaderboard").then((m) => ({ default: m.Leaderboard })),
+);
 const StudyGroupFinderPage = lazy(() => import("./pages/StudyGroupFinder"));
 const Leaderboard = lazy(() => import("./routes/leaderboard"));
 const Recap = lazy(() => import("./routes/recap"));
@@ -623,6 +627,46 @@ const router = createBrowserRouter(
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Route>
+            <Route path="/events/:eventId/dashboard" element={<EventDashboard />} />
+            <Route
+              path="/events/:eventId/kiosk"
+              element={
+                <Suspense fallback={<RemoteLoadingScreen />}>
+                  <EventKiosk />
+                </Suspense>
+              }
+            />
+            <Route path="/events/:eventId/gantt" element={<EventGantt />} />
+            {/* Events Map View with clustering */}
+            <Route path="events/map" element={<EventsMapPage />} />
+            {/* Campus Heatmap - Live Activity */}
+            <Route path="/map" element={<MapPage />} />
+            <Route path="/tours/manage" element={<TourManager />} />
+            <Route path="/tours/:tourId" element={<TourMode />} />{" "}
+            <Route path="challenge" element={<ChallengeArena />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="/feed" element={<Feed />} />
+            <Route path="/library" element={<LibraryBookFinder />} />
+            <Route path="/lost-found" element={<LostFound />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/data" element={<SettingsData />} />
+            <Route path="/recap" element={<Recap />} />
+            <Route path="/volunteer-record" element={<VolunteerRecord />} />
+            <Route path="/network" element={<NetworkPage />} />
+            <Route path="/admin/clubs/pending" element={<PendingClubsAdmin />} />
+            <Route path="/admin/analytics" element={<AnalyticsAdmin />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/messages" element={<MessagesRoute />} />
+            <Route path="/admin/reports" element={<AdminReportsPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/restore" element={<AdminRestorePage />} />
+<Route path="/admin/dlq" element={<AdminDlqPage />} />
+<Route path="/admin/emergency-broadcast" element={<AdminEmergencyBroadcast />} />            <Route path="/admin/badges" element={<AdminBadgesPage />} />            <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
+            <Route path="/admin/badges" element={<AdminBadgesPage />} />            <Route path="/unsubscribe" element={<UnsubscribeRoute />} />
+            {/* Catch-all route for 404 errors */}
+            <Route path="*" element={<NotFound />} />
             {/* Campus Shuttle Tracker */}
             <Route path="/shuttle-tracker" element={<CampusShuttleTracker />} />
             {/* Course Reviews */}
