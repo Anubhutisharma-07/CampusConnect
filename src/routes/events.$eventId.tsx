@@ -115,6 +115,7 @@ import { ReportAccessibilityIssueDialog } from "@/components/events/ReportAccess
 import { ManageAccessibilityOverridesDialog } from "@/components/events/ManageAccessibilityOverridesDialog";
 import EventFeedbackForm from "@/components/EventFeedbackForm";
 import { EventSeriesCatchUpCard } from "@/components/events/EventSeriesCatchUpCard";
+import { VendingMachineIntegration } from "@/components/events/VendingMachineIntegration";
 import { EventPhotoGallery } from "@/components/EventPhotoGallery";
 import { PredictiveTurnout } from "@/components/events/PredictiveTurnout";
 import {
@@ -2710,6 +2711,50 @@ export default function EventDetailsPage() {
                     >
                       Open in Google Maps ↗
                     </a>
+                  )}
+                </div>
+              )}
+
+              {/* Event Series Catch-Up Hub */}
+              <EventSeriesCatchUpCard
+                eventId={event.id}
+                eventTitle={event.title}
+                recordingUrl={(event as any).recording_url}
+                materialsUrl={(event as any).materials_url}
+                seriesId={(event as any).series_id}
+              />
+
+              {/* Vending Machine Smart Credits */}
+              {user && (
+                <VendingMachineIntegration
+                  eventId={event.id}
+                  userId={user.id}
+                  isOrganizer={isOrganizer}
+                />
+              )}
+
+              {/* Event Feedback (Only if ended and user RSVP'd) */}
+              {user &&
+                hasRsvpd &&
+                event.end_date &&
+                new Date(event.end_date).getTime() < Date.now() && (
+                  <div className="mt-10">
+                    <EventFeedbackForm eventId={event.id} user={user} />
+                  </div>
+                )}
+
+              {/* Event Gallery */}
+              <div className="mt-8 border-t-2 border-black pt-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                  <div>
+                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-blue-900">
+                      Event Gallery
+                    </h2>
+                    <p className="font-mono text-xs text-black/60 mt-1">
+                      Photos shared from this event
+                    </p>
+                  </div>
+                  {isOrganizer && (
                   </>
                 ) : coordsCheck.isCoordinates && !coordsCheck.isValid ? (
                   <div className="neu-border mt-4 flex items-start gap-4 bg-peach/20 p-5">
